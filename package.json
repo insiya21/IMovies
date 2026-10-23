@@ -1,0 +1,16 @@
+{
+  "name": "imovies",
+  "version": "1.0.0",
+  "description": "IMovies — Modern MERN Stack Cinema Ticket Booking System",
+  "scripts": {
+    "start:backend": "cd backend && npm start",
+    "dev:backend": "cd backend && npm run dev",
+    "start:frontend": "cd frontend && npm run dev",
+    "build:frontend": "cd frontend && npm run build",
+    "seed": "cd backend && npm run seed",
+    "test": "cd backend && npm test"
+  },
+  "keywords": ["mern", "movie-booking", "react", "bootstrap", "express", "mongodb"],
+  "author": "IMovies Team",
+  "license": "ISC"
+}
