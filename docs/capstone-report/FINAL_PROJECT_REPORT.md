@@ -170,5 +170,5 @@ cd frontend && npm run dev
   - Features: `feature-requirements.md`
   - Screenshots Guide: `docs/screenshots/SCREENSHOT_CHECKLIST.md`
   - Demo Video Script: `docs/demo-video/DEMO_VIDEO_GUIDE.md`
-- **Output Screenshots**: Follow the step-by-step capture guide in [`docs/screenshots/SCREENSHOT_CHECKLIST.md`](file:///Users/insiya/Projects/IMovies/docs/screenshots/SCREENSHOT_CHECKLIST.md) to capture the 9 required screens.
-- **Demo Video**: Record a 3–5 minute video following the script in [`docs/demo-video/DEMO_VIDEO_GUIDE.md`](file:///Users/insiya/Projects/IMovies/docs/demo-video/DEMO_VIDEO_GUIDE.md).
+- **Output Screenshots:** Available in `docs/screenshots/`.
+- **Demo Video Guide:** Available in `docs/demo-video/DEMO_VIDEO_GUIDE.md`.
