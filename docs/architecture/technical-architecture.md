@@ -5,31 +5,39 @@ This document describes the high-level system architecture, multi-tier software 
 ---
 
 ## 1. System Architecture Diagram
-
 ```mermaid
 flowchart TD
-    subgraph ClientTier["Presentation Tier (Client / SPA)"]
-        Browser["User Web Browser (Desktop / Mobile)"]
-        VercelHost["Vercel CDN / Static Edge Host"]
-        ReactApp["React 18 Single Page Application (Vite 6)<br>• Bootstrap 5 Cinema Dark Theme<br>• React Router v6 & Context API<br>• Axios HTTP Client with JWT Interceptor"]
+    subgraph ClientTier["Presentation Tier - Client SPA"]
+        Browser["User Web Browser"]
+        VercelHost["Vercel Static Hosting"]
+        ReactApp["React 18 SPA with Vite 6"]
         Browser <-->|HTTPS / SSL| VercelHost
         VercelHost --- ReactApp
     end
 
-    subgraph APITier["Application Tier (REST API Server)"]
-        RenderHost["Render Cloud Web Service (Node.js Environment)"]
-        ExpressApp["Express.js 4 REST API Server (server.js)<br>• CORS Configuration & Body Parsers<br>• API Rate Limiting (rateLimitMiddleware.js)<br>• Route Handlers (/api/auth, /movies, /shows, /bookings, /theaters)<br>• JWT Authentication Guard (authMiddleware.js)<br>• Centralized Error Middleware (errorMiddleware.js)"]
+    subgraph APITier["Application Tier - REST API"]
+        RenderHost["Render Web Service"]
+        ExpressApp["Express.js REST API"]
+        Middleware["CORS and Body Parsers"]
+        RateLimit["API Rate Limiting"]
+        Auth["JWT Authentication"]
+        Routes["API Routes: Auth, Movies, Shows, Bookings, Theaters"]
         RenderHost --- ExpressApp
+        ExpressApp --> Middleware
+        ExpressApp --> RateLimit
+        ExpressApp --> Auth
+        ExpressApp --> Routes
     end
 
-    subgraph DataTier["Data Tier (Database Layer)"]
-        MongoAtlas["MongoDB Atlas Cloud Database / Local MongoDB<br>• TLS / SCRAM Transport Security & Connection Pooling<br>• Collections: users, movies, shows, bookings, theaters<br>• Compound Secondary Indexes (movie + showDate)"]
+    subgraph DataTier["Data Tier - Database"]
+        MongoAtlas[("MongoDB Atlas or Local MongoDB")]
+        Collections["Users, Movies, Theaters, Shows, Bookings"]
+        MongoAtlas --- Collections
     end
 
-    ReactApp -->|REST API Requests (HTTPS / JSON)<br>Authorization: Bearer JWT| ExpressApp
-    ExpressApp -->|Mongoose 8 ODM Connection Pool<br>TLS / SCRAM Authentication| MongoAtlas
+    ReactApp -->|"HTTPS REST API - JSON and JWT"| ExpressApp
+    ExpressApp -->|"Mongoose database connection"| MongoAtlas
 ```
-
 ---
 
 ## 2. Multi-Tier Architecture Breakdown
