@@ -122,29 +122,34 @@ sequenceDiagram
 
 ### 3.2 Booking Cancellation & Atomic Seat Release Flow
 
-```mermaid
-sequenceDiagram
+```sequenceDiagram
     autonumber
-    actor Customer as Customer / Admin
-    participant Client as React Client (Vercel)
-    participant Server as Express REST API (Render)
-    participant DB as MongoDB Atlas
+    actor Customer
+    participant Client as React Client
+    participant Server as Express API
+    participant DB as MongoDB
 
-    Customer->>Client: Clicks "Cancel Booking" on My Bookings page
-    Client->>Customer: Displays cancellation confirmation modal
-    Customer->>Client: Confirms cancellation
-    Client->>Server: PUT /api/bookings/:id/cancel (Bearer JWT)
-    Server->>Server: authMiddleware verifies JWT token & extracts req.user
-    Server->>DB: Booking.findById(id)
-    DB-->>Server: Returns Booking document
-    Server->>Server: Validates ownership (req.user._id === booking.user || admin)
-    Server->>Server: Verifies booking is not already cancelled (idempotency check)
-    Server->>DB: Atomic Query: Show.findByIdAndUpdate(booking.show, { $pull: { bookedSeats: { $in: booking.seats } } })
-    DB-->>Server: Seats atomically removed from bookedSeats array
-    Server->>DB: booking.paymentStatus = 'cancelled'; booking.save()
-    DB-->>Server: Updated Booking document
-    Server-->>Client: HTTP 200 OK (Booking cancelled successfully)
-    Client-->>Customer: Updates UI badge to "Cancelled" & re-enables seats
+    Customer->>Client: Select Cancel Booking
+    Client->>Customer: Display confirmation prompt
+    Customer->>Client: Confirm cancellation
+    Client->>Server: PUT /api/bookings/:id/cancel
+    Server->>Server: Verify JWT authentication
+    Server->>DB: Find booking by ID
+    DB-->>Server: Return booking document
+    Server->>Server: Verify ownership or admin role
+    Server->>Server: Check cancellation status
+
+    alt Booking already cancelled
+        Server-->>Client: Return cancellation error
+    else Booking can be cancelled
+        Server->>DB: Release reserved seats atomically
+        Note right of DB: Remove seats using pull and in
+        DB-->>Server: Confirm seat release
+        Server->>DB: Update booking status
+        DB-->>Server: Return updated booking
+        Server-->>Client: Return cancellation result
+        Client-->>Customer: Update booking status
+    end
 ```
 
 ---
