@@ -1,15 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { moviesAPI, showsAPI, bookingsAPI } from '../services/api';
+import { moviesAPI, showsAPI, bookingsAPI, theatersAPI } from '../services/api';
 
 const AdminDashboardPage = () => {
-  const [activeTab, setActiveTab] = useState('movies'); // 'movies' | 'shows' | 'bookings'
+  const [activeTab, setActiveTab] = useState('movies'); // 'movies' | 'shows' | 'theaters' | 'bookings'
   const [stats, setStats] = useState({ totalMovies: 0, totalShows: 0, totalBookings: 0, totalRevenue: 0 });
   const [movies, setMovies] = useState([]);
   const [shows, setShows] = useState([]);
   const [bookings, setBookings] = useState([]);
+  const [theaters, setTheaters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [message, setMessage] = useState(null);
+
+  // Theater Modal State (SkillWallet PDF Add Theater Requirement)
+  const [showTheaterModal, setShowTheaterModal] = useState(false);
+  const [theaterForm, setTheaterForm] = useState({
+    theatreName: '',
+    location: '',
+    screenType: 'Standard',
+    balconySeatPrice: 22,
+    middleSeatPrice: 15,
+    lowerSeatPrice: 10,
+    totalSeats: 60,
+  });
 
   // Movie Modal State
   const [showMovieModal, setShowMovieModal] = useState(false);
@@ -32,6 +45,7 @@ const AdminDashboardPage = () => {
   const [showShowModal, setShowShowModal] = useState(false);
   const [showForm, setShowForm] = useState({
     movieId: '',
+    theaterId: '',
     screenName: 'Screen 1 - IMAX Laser 3D',
     screenType: 'IMAX',
     showDate: new Date().toISOString().split('T')[0],
@@ -44,16 +58,18 @@ const AdminDashboardPage = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [statsRes, moviesRes, showsRes, bookingsRes] = await Promise.all([
+      const [statsRes, moviesRes, showsRes, bookingsRes, theatersRes] = await Promise.all([
         bookingsAPI.getStats(),
         moviesAPI.getAll({}),
         showsAPI.getAll(),
         bookingsAPI.getAll(),
+        theatersAPI.getAll(),
       ]);
       setStats(statsRes.data.data);
       setMovies(moviesRes.data.data || []);
       setShows(showsRes.data.data || []);
       setBookings(bookingsRes.data.data || []);
+      setTheaters(theatersRes.data.data || []);
     } catch (err) {
       console.error('Error fetching admin data:', err);
     } finally {
@@ -198,6 +214,49 @@ const AdminDashboardPage = () => {
     }
   };
 
+  // Theater Form Handlers (SkillWallet PDF Add Theater Requirement)
+  const handleOpenAddTheater = () => {
+    setTheaterForm({
+      theatreName: '',
+      location: '',
+      screenType: 'Standard',
+      balconySeatPrice: 22,
+      middleSeatPrice: 15,
+      lowerSeatPrice: 10,
+      totalSeats: 60,
+    });
+    setShowTheaterModal(true);
+  };
+
+  const handleSaveTheater = async (e) => {
+    e.preventDefault();
+    setActionLoading(true);
+    try {
+      await theatersAPI.create(theaterForm);
+      setMessage({ type: 'success', text: `Theater "${theaterForm.theatreName}" created successfully.` });
+      setShowTheaterModal(false);
+      fetchData();
+    } catch (err) {
+      setMessage({ type: 'danger', text: err.response?.data?.message || 'Failed to add theater.' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteTheater = async (id, name) => {
+    if (!window.confirm(`Are you sure you want to delete theater "${name}"?`)) return;
+    setActionLoading(true);
+    try {
+      await theatersAPI.delete(id);
+      setMessage({ type: 'success', text: 'Theater removed successfully.' });
+      fetchData();
+    } catch (err) {
+      setMessage({ type: 'danger', text: err.response?.data?.message || 'Failed to delete theater.' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   return (
     <div className="container py-4">
       {/* Header */}
@@ -219,12 +278,15 @@ const AdminDashboardPage = () => {
             <h4 className="fw-bold text-light mb-0">Cinema Management</h4>
           </div>
           <p className="text-secondary small mb-0">
-            Control movie listings, schedule showtimes, and monitor customer ticket sales
+            Control movie listings, theaters, schedule showtimes, and monitor customer ticket sales
           </p>
         </div>
-        <div className="d-flex gap-2">
+        <div className="d-flex flex-wrap gap-2">
           <button className="btn btn-cinema-primary btn-sm px-3" onClick={handleOpenAddMovie}>
             <i className="bi bi-plus-lg me-1"></i> Add Movie
+          </button>
+          <button className="btn btn-cinema-outline btn-sm px-3" onClick={handleOpenAddTheater}>
+            <i className="bi bi-buildings me-1"></i> Add Theater
           </button>
           <button className="btn btn-cinema-outline btn-sm px-3" onClick={handleOpenAddShow}>
             <i className="bi bi-calendar-plus me-1"></i> Schedule Show
@@ -380,6 +442,19 @@ const AdminDashboardPage = () => {
           onClick={() => setActiveTab('shows')}
         >
           <i className="bi bi-calendar-event me-1.5"></i> Scheduled Shows ({shows.length})
+        </button>
+
+        <button
+          className={`btn btn-sm px-3 py-1.5 rounded-2 ${
+            activeTab === 'theaters' ? 'btn-cinema-primary' : 'btn-dark text-secondary'
+          }`}
+          style={{
+            backgroundColor: activeTab === 'theaters' ? 'var(--color-primary)' : 'var(--bg-card)',
+            borderColor: 'var(--border-subtle)',
+          }}
+          onClick={() => setActiveTab('theaters')}
+        >
+          <i className="bi bi-buildings me-1.5"></i> Theaters ({theaters.length})
         </button>
 
         <button
@@ -616,6 +691,95 @@ const AdminDashboardPage = () => {
         </div>
       )}
 
+      {/* Tab: Theaters (SkillWallet PDF Add Theater Requirement) */}
+      {activeTab === 'theaters' && (
+        <div
+          className="card overflow-hidden rounded-3 border"
+          style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+        >
+          {theaters.length === 0 ? (
+            <div className="p-5 text-center">
+              <i className="bi bi-buildings text-secondary fs-1 mb-2"></i>
+              <h6 className="text-light mb-1">No Theaters Configured</h6>
+              <p className="text-secondary small mb-3">Add cinema locations to organize screens and pricing tiers.</p>
+              <button className="btn btn-cinema-primary btn-sm px-3" onClick={handleOpenAddTheater}>
+                <i className="bi bi-plus-lg me-1"></i> Add First Theater
+              </button>
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table table-dark table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Theater Name</th>
+                    <th>Location</th>
+                    <th>Screen Format</th>
+                    <th>Seat Pricing Tiers</th>
+                    <th>Capacity</th>
+                    <th className="text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {theaters.map((t) => (
+                    <tr key={t._id}>
+                      <td>
+                        <div className="fw-semibold text-light small d-flex align-items-center gap-2">
+                          <i className="bi bi-buildings" style={{ color: 'var(--color-primary)' }}></i>
+                          <span>{t.theatreName}</span>
+                        </div>
+                        <div className="text-secondary small font-monospace" style={{ fontSize: '0.72rem' }}>
+                          ID: {t.theatreId || t._id.substring(0, 8)}
+                        </div>
+                      </td>
+                      <td className="small text-light">
+                        <i className="bi bi-geo-alt me-1 text-danger"></i>
+                        {t.location}
+                      </td>
+                      <td>
+                        <span
+                          className="badge"
+                          style={{
+                            backgroundColor: 'rgba(56, 189, 248, 0.15)',
+                            color: 'var(--color-cyan)',
+                            border: '1px solid rgba(56, 189, 248, 0.3)',
+                            fontSize: '0.75rem',
+                          }}
+                        >
+                          {t.screenType || 'Standard'}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="small d-flex flex-wrap gap-1">
+                          <span className="badge bg-secondary" style={{ fontSize: '0.7rem' }}>
+                            Lower: ${t.lowerSeatPrice || 10}
+                          </span>
+                          <span className="badge bg-secondary" style={{ fontSize: '0.7rem' }}>
+                            Middle: ${t.middleSeatPrice || 15}
+                          </span>
+                          <span className="badge bg-secondary" style={{ fontSize: '0.7rem' }}>
+                            Balcony: ${t.balconySeatPrice || 22}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="small text-secondary">{t.totalSeats || 60} Seats</td>
+                      <td className="text-end">
+                        <button
+                          className="btn btn-outline-danger btn-sm p-1 px-2"
+                          title="Delete Theater"
+                          onClick={() => handleDeleteTheater(t._id, t.theatreName)}
+                        >
+                          <i className="bi bi-trash"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Add / Edit Movie Modal */}
       {showMovieModal && (
         <div
@@ -812,6 +976,38 @@ const AdminDashboardPage = () => {
                     </select>
                   </div>
 
+                  <div className="mb-2.5">
+                    <label className="form-label small text-secondary mb-1">Select Theater Location (Optional)</label>
+                    <select
+                      className="form-select cinema-input form-control-sm"
+                      value={showForm.theaterId || ''}
+                      onChange={(e) => {
+                        const tId = e.target.value;
+                        const t = theaters.find((th) => th._id === tId);
+                        if (t) {
+                          setShowForm({
+                            ...showForm,
+                            theaterId: tId,
+                            screenName: `${t.theatreName} - Screen 1`,
+                            screenType: t.screenType || 'Standard',
+                            silverPrice: t.lowerSeatPrice || 10,
+                            goldPrice: t.middleSeatPrice || 15,
+                            platinumPrice: t.balconySeatPrice || 22,
+                          });
+                        } else {
+                          setShowForm({ ...showForm, theaterId: '' });
+                        }
+                      }}
+                    >
+                      <option value="">-- Custom Screen / Pick Theater --</option>
+                      {theaters.map((t) => (
+                        <option key={t._id} value={t._id}>
+                          {t.theatreName} ({t.location}) - {t.screenType}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
                   <div className="row g-2 mb-2.5">
                     <div className="col-7">
                       <label className="form-label small text-secondary mb-1">Screen Name</label>
@@ -915,6 +1111,145 @@ const AdminDashboardPage = () => {
                   </button>
                   <button type="submit" className="btn btn-cinema-primary btn-sm px-3" disabled={actionLoading}>
                     {actionLoading ? 'Scheduling...' : 'Confirm Schedule'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Theater Modal (SkillWallet PDF Add Theater Requirement) */}
+      {showTheaterModal && (
+        <div
+          className="modal show d-block"
+          tabIndex="-1"
+          style={{ backgroundColor: 'rgba(8, 13, 19, 0.85)', zIndex: 1070 }}
+        >
+          <div className="modal-dialog modal-dialog-centered">
+            <div
+              className="modal-content text-light shadow-lg"
+              style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+            >
+              <div className="modal-header py-2.5 px-3 border-secondary" style={{ borderColor: 'var(--border-subtle) !important' }}>
+                <h6 className="modal-title fw-bold mb-0 d-flex align-items-center gap-1.5">
+                  <i className="bi bi-buildings" style={{ color: 'var(--color-primary)' }}></i>
+                  <span>Add Theater / Cinema Location</span>
+                </h6>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={() => setShowTheaterModal(false)}
+                ></button>
+              </div>
+
+              <form onSubmit={handleSaveTheater}>
+                <div className="modal-body p-3">
+                  <div className="mb-2.5">
+                    <label className="form-label small text-secondary mb-1">Theater Name</label>
+                    <input
+                      type="text"
+                      className="form-control cinema-input form-control-sm"
+                      placeholder="e.g. Grand PVR Heritage IMAX"
+                      value={theaterForm.theatreName}
+                      onChange={(e) => setTheaterForm({ ...theaterForm, theatreName: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="row g-2 mb-2.5">
+                    <div className="col-7">
+                      <label className="form-label small text-secondary mb-1">Location / City Area</label>
+                      <input
+                        type="text"
+                        className="form-control cinema-input form-control-sm"
+                        placeholder="e.g. Downtown Central Mall"
+                        value={theaterForm.location}
+                        onChange={(e) => setTheaterForm({ ...theaterForm, location: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="col-5">
+                      <label className="form-label small text-secondary mb-1">Screen Format</label>
+                      <select
+                        className="form-select cinema-input form-control-sm"
+                        value={theaterForm.screenType}
+                        onChange={(e) => setTheaterForm({ ...theaterForm, screenType: e.target.value })}
+                      >
+                        <option value="Standard">Standard</option>
+                        <option value="IMAX">IMAX</option>
+                        <option value="Dolby Atmos">Dolby Atmos</option>
+                        <option value="4DX">4DX</option>
+                        <option value="VIP">VIP</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div
+                    className="border-top pt-2.5 mb-2.5"
+                    style={{ borderColor: 'var(--border-subtle) !important' }}
+                  >
+                    <label className="form-label small text-secondary fw-semibold mb-1.5">
+                      Tier Pricing Configuration ($)
+                    </label>
+                    <div className="row g-2">
+                      <div className="col-4">
+                        <label className="form-label small text-secondary mb-0.5" style={{ fontSize: '0.72rem' }}>
+                          Lower Tier ($)
+                        </label>
+                        <input
+                          type="number"
+                          className="form-control cinema-input form-control-sm"
+                          value={theaterForm.lowerSeatPrice}
+                          onChange={(e) => setTheaterForm({ ...theaterForm, lowerSeatPrice: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div className="col-4">
+                        <label className="form-label small text-secondary mb-0.5" style={{ fontSize: '0.72rem' }}>
+                          Middle Tier ($)
+                        </label>
+                        <input
+                          type="number"
+                          className="form-control cinema-input form-control-sm"
+                          value={theaterForm.middleSeatPrice}
+                          onChange={(e) => setTheaterForm({ ...theaterForm, middleSeatPrice: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div className="col-4">
+                        <label className="form-label small text-secondary mb-0.5" style={{ fontSize: '0.72rem' }}>
+                          Balcony / VIP ($)
+                        </label>
+                        <input
+                          type="number"
+                          className="form-control cinema-input form-control-sm"
+                          value={theaterForm.balconySeatPrice}
+                          onChange={(e) => setTheaterForm({ ...theaterForm, balconySeatPrice: e.target.value })}
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="col-12">
+                    <label className="form-label small text-secondary mb-1">Total Auditorium Capacity</label>
+                    <input
+                      type="number"
+                      className="form-control cinema-input form-control-sm"
+                      value={theaterForm.totalSeats}
+                      onChange={(e) => setTheaterForm({ ...theaterForm, totalSeats: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="modal-footer py-2 px-3 border-secondary" style={{ borderColor: 'var(--border-subtle) !important' }}>
+                  <button type="button" className="btn btn-cinema-outline btn-sm" onClick={() => setShowTheaterModal(false)}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-cinema-primary btn-sm px-3" disabled={actionLoading}>
+                    {actionLoading ? 'Saving...' : 'Add Theater'}
                   </button>
                 </div>
               </form>

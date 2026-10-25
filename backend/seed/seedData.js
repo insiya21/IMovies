@@ -8,6 +8,7 @@ const User = require('../models/User');
 const Movie = require('../models/Movie');
 const Show = require('../models/Show');
 const Booking = require('../models/Booking');
+const Theater = require('../models/Theater');
 
 const sampleMovies = [
   {
@@ -108,9 +109,46 @@ const seedDatabase = async () => {
     // Clear existing collections
     await Booking.deleteMany({});
     await Show.deleteMany({});
+    await Theater.deleteMany({});
     await Movie.deleteMany({});
     await User.deleteMany({});
     console.log('[Seed] Cleared existing data.');
+
+    // Seed Theaters
+    const sampleTheaters = [
+      {
+        theatreName: 'PVR Grand Heritage - IMAX Laser',
+        theatreId: 'TH-PVR01',
+        location: 'Downtown Central, Sector 4',
+        screenType: 'IMAX',
+        balconySeatPrice: 28,
+        middleSeatPrice: 20,
+        lowerSeatPrice: 14,
+        totalSeats: 60,
+      },
+      {
+        theatreName: 'Cinepolis Dolby Atmos Megaplex',
+        theatreId: 'TH-CIN02',
+        location: 'Westside Promenade Mall',
+        screenType: 'Dolby Atmos',
+        balconySeatPrice: 25,
+        middleSeatPrice: 18,
+        lowerSeatPrice: 12,
+        totalSeats: 60,
+      },
+      {
+        theatreName: 'INOX Luxe VIP Cinema',
+        theatreId: 'TH-INX03',
+        location: 'Uptown Financial Hub',
+        screenType: 'VIP',
+        balconySeatPrice: 30,
+        middleSeatPrice: 22,
+        lowerSeatPrice: 15,
+        totalSeats: 60,
+      },
+    ];
+    const createdTheaters = await Theater.insertMany(sampleTheaters);
+    console.log(`[Seed] Created ${createdTheaters.length} cinema theaters.`);
 
     // Create Admin and Regular User
     const adminUser = await User.create({
@@ -159,6 +197,7 @@ const seedDatabase = async () => {
 
           showDocs.push({
             movie: movie._id,
+            theater: createdTheaters[i % createdTheaters.length]._id,
             screenName: screen.name,
             screenType: screen.type,
             showDate,

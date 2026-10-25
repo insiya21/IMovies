@@ -29,13 +29,15 @@ function App() {
           <Navbar />
           <main className="flex-grow-1">
             <Routes>
-              {/* Public Routes */}
+              {/* Public Routes & SkillWallet Route Aliases */}
               <Route path="/" element={<HomePage />} />
+              <Route path="/movies" element={<HomePage />} />
+              <Route path="/products" element={<HomePage />} />
               <Route path="/movie/:id" element={<MovieDetailsPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
 
-              {/* Protected User Routes */}
+              {/* Protected User Routes & Order History Aliases */}
               <Route
                 path="/booking/:showId"
                 element={
@@ -60,10 +62,34 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/orders"
+                element={
+                  <ProtectedRoute>
+                    <MyBookingsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/order"
+                element={
+                  <ProtectedRoute>
+                    <MyBookingsPage />
+                  </ProtectedRoute>
+                }
+              />
 
-              {/* Admin Protected Routes */}
+              {/* Admin Protected Routes & Dashboard Alias */}
               <Route
                 path="/admin"
+                element={
+                  <AdminRoute>
+                    <AdminDashboardPage />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/dashboard"
                 element={
                   <AdminRoute>
                     <AdminDashboardPage />

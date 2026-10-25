@@ -77,6 +77,7 @@ const createShow = async (req, res, next) => {
   try {
     const {
       movieId,
+      theaterId,
       screenName,
       screenType,
       showDate,
@@ -102,6 +103,7 @@ const createShow = async (req, res, next) => {
 
     const show = await Show.create({
       movie: movieId,
+      theater: theaterId || null,
       screenName: screenName || 'Screen 1 - Dolby Atmos',
       screenType: screenType || 'Standard',
       showDate,
@@ -111,7 +113,7 @@ const createShow = async (req, res, next) => {
       bookedSeats: [],
     });
 
-    const populatedShow = await Show.findById(show._id).populate('movie');
+    const populatedShow = await Show.findById(show._id).populate('movie').populate('theater');
 
     res.status(201).json({
       success: true,

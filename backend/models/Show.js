@@ -7,6 +7,10 @@ const showSchema = new mongoose.Schema(
       ref: 'Movie',
       required: [true, 'Movie reference is required'],
     },
+    theater: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Theater',
+    },
     screenName: {
       type: String,
       required: [true, 'Screen/Auditorium name is required'],
@@ -14,7 +18,7 @@ const showSchema = new mongoose.Schema(
     },
     screenType: {
       type: String,
-      enum: ['Standard', 'IMAX', '4DX', 'VIP'],
+      enum: ['Standard', 'IMAX', '4DX', 'VIP', 'Dolby Atmos'],
       default: 'Standard',
     },
     showDate: {

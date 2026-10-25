@@ -67,6 +67,16 @@ export const bookingsAPI = {
   getById: (id) => api.get(`/bookings/${id}`),
   getAll: () => api.get('/bookings'),
   getStats: () => api.get('/bookings/stats'),
+  cancel: (id) => api.put(`/bookings/${id}/cancel`),
+};
+
+// Theaters Endpoints (SkillWallet PDF Add Theater Requirement)
+export const theatersAPI = {
+  getAll: () => api.get('/theaters'),
+  getById: (id) => api.get(`/theaters/${id}`),
+  create: (theaterData) => api.post('/theaters', theaterData),
+  update: (id, theaterData) => api.put(`/theaters/${id}`, theaterData),
+  delete: (id) => api.delete(`/theaters/${id}`),
 };
 
 export default api;

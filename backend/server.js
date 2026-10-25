@@ -10,6 +10,10 @@ const authRoutes = require('./routes/authRoutes');
 const movieRoutes = require('./routes/movieRoutes');
 const showRoutes = require('./routes/showRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
+const theaterRoutes = require('./routes/theaterRoutes');
+
+// Middleware imports
+const { authLimiter, bookingLimiter, apiLimiter } = require('./middleware/rateLimitMiddleware');
 
 dotenv.config();
 
@@ -28,6 +32,12 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Apply Global & Route-Specific Rate Limiters
+app.use('/api', apiLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/bookings', bookingLimiter);
+
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({
@@ -43,6 +53,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/movies', movieRoutes);
 app.use('/api/shows', showRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/theaters', theaterRoutes);
+app.use('/api/theatres', theaterRoutes); // Alias for UK spelling (matches SkillWallet PDF)
 
 // Error Handling Middlewares
 app.use(notFound);

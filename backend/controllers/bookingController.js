@@ -247,10 +247,65 @@ const getAdminStats = async (req, res, next) => {
   }
 };
 
+// @desc    Cancel a booking and release seats back to availability
+// @route   PUT /api/bookings/:id/cancel
+// @access  Private
+const cancelBooking = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const booking = await Booking.findById(id);
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found',
+      });
+    }
+
+    // Security check: Must be the user who booked or an admin
+    if (
+      booking.user.toString() !== req.user._id.toString() &&
+      req.user.role !== 'admin'
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied: You can only cancel your own bookings',
+      });
+    }
+
+    if (booking.paymentStatus === 'cancelled') {
+      return res.status(400).json({
+        success: false,
+        message: 'This booking has already been cancelled',
+      });
+    }
+
+    // ATOMIC SEAT RELEASE:
+    // Remove the booked seats from the Show document's bookedSeats array
+    // Note: In MongoDB, $pull with multiple values uses $in, not $each ($each is only valid for $push / $addToSet)
+    await Show.findByIdAndUpdate(booking.show, {
+      $pull: { bookedSeats: { $in: booking.seats } },
+    });
+
+    // Update booking status
+    booking.paymentStatus = 'cancelled';
+    await booking.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Booking cancelled successfully. Reserved seats have been released.',
+      data: booking,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createBooking,
   getMyBookings,
   getBookingById,
   getAllBookings,
   getAdminStats,
+  cancelBooking,
 };

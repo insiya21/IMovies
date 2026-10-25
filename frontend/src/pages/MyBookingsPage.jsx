@@ -8,20 +8,46 @@ const MyBookingsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [cancelModalBooking, setCancelModalBooking] = useState(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [actionMessage, setActionMessage] = useState(null);
+
+  const fetchBookings = async () => {
+    try {
+      const res = await bookingsAPI.getMyBookings();
+      setBookings(res.data.data || []);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to load your booking history.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchBookings = async () => {
-      try {
-        const res = await bookingsAPI.getMyBookings();
-        setBookings(res.data.data || []);
-      } catch (err) {
-        setError(err.response?.data?.message || 'Failed to load your booking history.');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchBookings();
   }, []);
+
+  const handleConfirmCancel = async () => {
+    if (!cancelModalBooking) return;
+    setCancelling(true);
+    setActionMessage(null);
+    try {
+      await bookingsAPI.cancel(cancelModalBooking._id);
+      setActionMessage({
+        type: 'success',
+        text: `Booking ${cancelModalBooking.bookingRef} has been cancelled and your seats were released.`,
+      });
+      setCancelModalBooking(null);
+      await fetchBookings();
+    } catch (err) {
+      setActionMessage({
+        type: 'danger',
+        text: err.response?.data?.message || 'Failed to cancel booking. Please try again.',
+      });
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   return (
     <div className="container py-4">
@@ -30,8 +56,16 @@ const MyBookingsPage = () => {
           <i className="bi bi-ticket-perforated" style={{ color: 'var(--color-primary)' }}></i>
           <span>My Bookings & Tickets</span>
         </h4>
-        <p className="text-secondary small mb-0">Access and view all your cinema reservations</p>
+        <p className="text-secondary small mb-0">Access, view, or manage your cinema reservations</p>
       </div>
+
+      {actionMessage && (
+        <div className={`alert alert-${actionMessage.type} alert-dismissible fade show mb-3`} role="alert">
+          <i className={`bi ${actionMessage.type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'} me-2`}></i>
+          {actionMessage.text}
+          <button type="button" className="btn-close" aria-label="Close" onClick={() => setActionMessage(null)}></button>
+        </div>
+      )}
 
       {loading ? (
         <div className="text-center py-5 my-4">
@@ -79,17 +113,31 @@ const MyBookingsPage = () => {
                     {/* Header info */}
                     <div className="d-flex justify-content-between align-items-start mb-2.5">
                       <div>
-                        <span
-                          className="badge mb-1.5 d-inline-flex align-items-center gap-1"
-                          style={{
-                            backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                            color: 'var(--color-success)',
-                            border: '1px solid rgba(16, 185, 129, 0.3)',
-                            fontSize: '0.72rem',
-                          }}
-                        >
-                          <i className="bi bi-check-circle"></i> Confirmed
-                        </span>
+                        {booking.paymentStatus === 'cancelled' ? (
+                          <span
+                            className="badge mb-1.5 d-inline-flex align-items-center gap-1"
+                            style={{
+                              backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                              color: '#ef4444',
+                              border: '1px solid rgba(239, 68, 68, 0.3)',
+                              fontSize: '0.72rem',
+                            }}
+                          >
+                            <i className="bi bi-x-circle"></i> Cancelled
+                          </span>
+                        ) : (
+                          <span
+                            className="badge mb-1.5 d-inline-flex align-items-center gap-1"
+                            style={{
+                              backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                              color: 'var(--color-success)',
+                              border: '1px solid rgba(16, 185, 129, 0.3)',
+                              fontSize: '0.72rem',
+                            }}
+                          >
+                            <i className="bi bi-check-circle"></i> Confirmed
+                          </span>
+                        )}
                         <h6 className="text-light fw-bold mb-0.5" style={{ fontSize: '1rem' }}>
                           {movie.title || 'Movie'}
                         </h6>
@@ -158,19 +206,115 @@ const MyBookingsPage = () => {
                       </div>
                     </div>
 
-                    <button
-                      className="btn btn-cinema-outline btn-sm py-1 px-2.5 d-flex align-items-center gap-1.5"
-                      style={{ fontSize: '0.82rem' }}
-                      onClick={() => setSelectedTicket(booking)}
-                    >
-                      <i className="bi bi-qr-code"></i>
-                      <span>View Ticket</span>
-                    </button>
+                    <div className="d-flex align-items-center gap-2">
+                      {booking.paymentStatus !== 'cancelled' && (
+                        <button
+                          className="btn btn-outline-danger btn-sm py-1 px-2.5 d-flex align-items-center gap-1"
+                          style={{ fontSize: '0.8rem' }}
+                          onClick={() => setCancelModalBooking(booking)}
+                        >
+                          <i className="bi bi-x-circle"></i>
+                          <span>Cancel</span>
+                        </button>
+                      )}
+                      <button
+                        className="btn btn-cinema-outline btn-sm py-1 px-2.5 d-flex align-items-center gap-1.5"
+                        style={{ fontSize: '0.82rem' }}
+                        onClick={() => setSelectedTicket(booking)}
+                      >
+                        <i className="bi bi-qr-code"></i>
+                        <span>View Ticket</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Cancel Confirmation Modal */}
+      {cancelModalBooking && (
+        <div
+          className="modal show d-block"
+          tabIndex="-1"
+          style={{ backgroundColor: 'rgba(8, 13, 19, 0.88)', zIndex: 1090 }}
+        >
+          <div className="modal-dialog modal-dialog-centered">
+            <div
+              className="modal-content shadow-lg border"
+              style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+            >
+              <div className="modal-header py-2.5 px-3 border-bottom" style={{ borderColor: 'var(--border-subtle)' }}>
+                <h6 className="modal-title text-danger fw-bold mb-0 d-flex align-items-center gap-1.5">
+                  <i className="bi bi-exclamation-triangle-fill"></i>
+                  <span>Confirm Ticket Cancellation</span>
+                </h6>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  aria-label="Close"
+                  disabled={cancelling}
+                  onClick={() => setCancelModalBooking(null)}
+                ></button>
+              </div>
+              <div className="modal-body p-3.5">
+                <p className="text-light mb-2">
+                  Are you sure you want to cancel your reservation for{' '}
+                  <strong>{cancelModalBooking.movie?.title || 'this movie'}</strong>?
+                </p>
+                <div
+                  className="p-2.5 rounded-2 mb-3 border small"
+                  style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-subtle)' }}
+                >
+                  <div className="text-secondary mb-1">
+                    Booking Reference:{' '}
+                    <span className="text-warning fw-mono">{cancelModalBooking.bookingRef}</span>
+                  </div>
+                  <div className="text-secondary mb-1">
+                    Seats to be released:{' '}
+                    <span className="text-light fw-bold">{cancelModalBooking.seats?.join(', ')}</span>
+                  </div>
+                  <div className="text-secondary">
+                    Total Refund Amount:{' '}
+                    <span className="text-success fw-bold">${cancelModalBooking.totalAmount?.toFixed(2)}</span>
+                  </div>
+                </div>
+                <div className="text-secondary small">
+                  Once cancelled, these seats will be immediately released back into real-time availability for other patrons.
+                </div>
+              </div>
+              <div className="modal-footer py-2 px-3 border-top" style={{ borderColor: 'var(--border-subtle)' }}>
+                <button
+                  type="button"
+                  className="btn btn-cinema-outline btn-sm px-3"
+                  disabled={cancelling}
+                  onClick={() => setCancelModalBooking(null)}
+                >
+                  Keep Booking
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger btn-sm px-3 d-flex align-items-center gap-1.5"
+                  disabled={cancelling}
+                  onClick={handleConfirmCancel}
+                >
+                  {cancelling ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm" role="status"></span>
+                      <span>Cancelling...</span>
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-x-circle-fill"></i>
+                      <span>Yes, Cancel Booking</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
