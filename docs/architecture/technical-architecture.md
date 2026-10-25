@@ -122,7 +122,8 @@ sequenceDiagram
 
 ### 3.2 Booking Cancellation & Atomic Seat Release Flow
 
-```sequenceDiagram
+```mermaid
+sequenceDiagram
     autonumber
     actor Customer
     participant Client as React Client
