@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -7,11 +7,22 @@ const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
 
-  const { login, loading } = useAuth();
+  const { login, loading, isAuthenticated, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const from = location.state?.from?.pathname || '/';
+
+  // If already authenticated, redirect immediately based on role
+  useEffect(() => {
+    if (isAuthenticated) {
+      if (isAdmin) {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate(from, { replace: true });
+      }
+    }
+  }, [isAuthenticated, isAdmin, navigate, from]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,7 +30,12 @@ const LoginPage = () => {
 
     const res = await login(email, password);
     if (res.success) {
-      navigate(from, { replace: true });
+      // Role-based post-login redirection: Admins go straight to the Admin Dashboard
+      if (res.data?.role === 'admin') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate(from, { replace: true });
+      }
     } else {
       setError(res.message);
     }
@@ -30,6 +46,8 @@ const LoginPage = () => {
     setPassword(demoPassword);
     setError(null);
   };
+
+  const bannerMessage = location.state?.message;
 
   return (
     <div className="container py-5">
@@ -47,6 +65,20 @@ const LoginPage = () => {
               <h5 className="fw-bold text-light mb-1">Welcome Back</h5>
               <p className="text-secondary small mb-0">Sign in to book tickets and manage reservations</p>
             </div>
+
+            {bannerMessage && !error && (
+              <div
+                className="alert py-2 px-3 small mb-3 rounded-2 d-flex align-items-center gap-2 border"
+                style={{
+                  backgroundColor: 'rgba(255, 200, 61, 0.12)',
+                  borderColor: 'rgba(255, 200, 61, 0.3)',
+                  color: 'var(--color-gold)',
+                }}
+              >
+                <i className="bi bi-info-circle-fill fs-6 flex-shrink-0"></i>
+                <span>{bannerMessage}</span>
+              </div>
+            )}
 
             {error && (
               <div className="alert alert-danger py-2 px-3 alert-dismissible fade show small mb-3" role="alert">

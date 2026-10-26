@@ -783,3 +783,65 @@ h2, .section-heading {
   padding: 0.75rem 0.85rem;
   border-bottom: 1px solid var(--border-subtle);
 }
+
+/* Base Body & Container Background Guard */
+.bg-cinema-main {
+  background-color: var(--bg-main) !important;
+}
+
+html,
+body,
+#root {
+  background-color: var(--bg-main) !important;
+  color: var(--text-main);
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+main {
+  background-color: var(--bg-main) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Missing inset utility guard */
+.inset-0 {
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+}
+
+/* Movie Details Hero Banner — Seamlessly anchors beneath the sticky navbar */
+.movie-details-hero {
+  position: relative;
+  background-color: var(--bg-main);
+  background-size: cover;
+  background-position: center 25%;
+  background-repeat: no-repeat;
+  margin-top: 0 !important;
+  margin-bottom: 1.5rem;
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+  border-top: none !important;
+  border-bottom: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+.movie-details-hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    rgba(8, 13, 19, 1.0) 0%,
+    rgba(8, 13, 19, 0.88) 15%,
+    rgba(8, 13, 19, 0.94) 55%,
+    rgba(8, 13, 19, 1.0) 100%
+  );
+  pointer-events: none;
+}

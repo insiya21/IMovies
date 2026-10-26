@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatINR } from '../../utils/currency';
 
 const DigitalTicket = ({ booking }) => {
   if (!booking) return null;
@@ -122,7 +123,7 @@ const DigitalTicket = ({ booking }) => {
       <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2.5">
         <div>
           <div className="text-secondary small" style={{ fontSize: '0.75rem' }}>Total Paid</div>
-          <div className="fs-5 fw-bold text-light">${booking.totalAmount?.toFixed(2)}</div>
+          <div className="fs-5 fw-bold text-light">{formatINR(booking.totalAmount)}</div>
           <div className="text-secondary small" style={{ fontSize: '0.72rem' }}>
             Paid via {booking.paymentMethod || 'Demo Card'}
           </div>

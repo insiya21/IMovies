@@ -33,19 +33,19 @@ const showSchema = new mongoose.Schema(
       silver: {
         type: Number,
         required: true,
-        default: 10,
+        default: 180,
         min: 0,
       },
       gold: {
         type: Number,
         required: true,
-        default: 15,
+        default: 250,
         min: 0,
       },
       platinum: {
         type: Number,
         required: true,
-        default: 22,
+        default: 350,
         min: 0,
       },
     },

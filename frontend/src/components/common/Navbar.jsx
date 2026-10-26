@@ -24,10 +24,24 @@ const Navbar = () => {
   return (
     <nav className="navbar navbar-expand-lg cinema-navbar sticky-top">
       <div className="container d-flex align-items-center justify-content-between">
-        {/* Brand Logo */}
-        <Link className="navbar-brand brand-logo py-0" to="/">
+        {/* Brand Logo - Links to Admin Dashboard if admin, else Home */}
+        <Link className="navbar-brand brand-logo py-0" to={isAdmin ? '/admin' : '/'}>
           <i className="bi bi-film"></i>
           <span>IMovies</span>
+          {isAdmin && (
+            <span
+              className="badge ms-1.5"
+              style={{
+                backgroundColor: 'rgba(255, 53, 72, 0.15)',
+                color: 'var(--color-primary)',
+                border: '1px solid rgba(255, 53, 72, 0.35)',
+                fontSize: '0.62rem',
+                letterSpacing: '0.04em',
+              }}
+            >
+              ADMIN
+            </span>
+          )}
         </Link>
 
         {/* Hamburger Menu — only visible on smaller screens (< 992px) */}
@@ -45,68 +59,134 @@ const Navbar = () => {
 
         {/* Collapsible Content */}
         <div className="collapse navbar-collapse" id="cinemaNavbarContent">
-          {/* Main Desktop Links: Home, Movies, Coming Soon */}
+          {/* Main Desktop Links: Role-separated */}
           <ul className="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-3 gap-lg-1">
-            <li className="nav-item">
-              <NavLink
-                to="/"
-                end
-                className={({ isActive }) =>
-                  `nav-link px-2.5 ${isActive && !location.search ? 'active' : ''}`
-                }
-              >
-                Home
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink
-                to="/#movies"
-                className={({ isActive }) =>
-                  `nav-link px-2.5 ${isActive && location.hash === '#movies' ? 'active' : ''}`
-                }
-                onClick={(e) => {
-                  if (location.pathname === '/') {
-                    e.preventDefault();
-                    document.getElementById('movies-section')?.scrollIntoView({ behavior: 'smooth' });
-                  } else {
-                    navigate('/#movies');
-                  }
-                }}
-              >
-                Movies
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink
-                to="/?filter=coming-soon"
-                className={({ isActive }) =>
-                  `nav-link px-2.5 ${location.search.includes('coming-soon') ? 'active' : ''}`
-                }
-              >
-                Coming Soon
-              </NavLink>
-            </li>
-            {isAuthenticated && (
-              <li className="nav-item">
-                <NavLink
-                  to="/my-bookings"
-                  className={({ isActive }) => `nav-link px-2.5 ${isActive ? 'active' : ''}`}
-                >
-                  <i className="bi bi-ticket-perforated me-1 text-warning"></i>
-                  My Bookings
-                </NavLink>
-              </li>
-            )}
-            {isAdmin && (
-              <li className="nav-item">
-                <NavLink
-                  to="/admin"
-                  className={({ isActive }) => `nav-link px-2.5 ${isActive ? 'active' : ''}`}
-                >
-                  <span className="badge bg-danger me-1" style={{ fontSize: '0.62rem' }}>ADMIN</span>
-                  Portal
-                </NavLink>
-              </li>
+            {isAdmin ? (
+              <>
+                <li className="nav-item">
+                  <NavLink
+                    to="/admin"
+                    end
+                    className={({ isActive }) => `nav-link px-2.5 ${isActive ? 'active' : ''}`}
+                  >
+                    <i className="bi bi-speedometer2 me-1 text-danger"></i>
+                    Dashboard
+                  </NavLink>
+                </li>
+                <li className="nav-item">
+                  <NavLink
+                    to="/admin?tab=movies"
+                    className={({ isActive }) =>
+                      `nav-link px-2.5 ${location.search.includes('tab=movies') ? 'active' : ''}`
+                    }
+                  >
+                    Movies
+                  </NavLink>
+                </li>
+                <li className="nav-item">
+                  <NavLink
+                    to="/admin?tab=shows"
+                    className={({ isActive }) =>
+                      `nav-link px-2.5 ${location.search.includes('tab=shows') ? 'active' : ''}`
+                    }
+                  >
+                    Shows
+                  </NavLink>
+                </li>
+                <li className="nav-item">
+                  <NavLink
+                    to="/admin?tab=theaters"
+                    className={({ isActive }) =>
+                      `nav-link px-2.5 ${location.search.includes('tab=theaters') ? 'active' : ''}`
+                    }
+                  >
+                    Theaters
+                  </NavLink>
+                </li>
+                <li className="nav-item">
+                  <NavLink
+                    to="/admin?tab=bookings"
+                    className={({ isActive }) =>
+                      `nav-link px-2.5 ${location.search.includes('tab=bookings') ? 'active' : ''}`
+                    }
+                  >
+                    Bookings
+                  </NavLink>
+                </li>
+                <li className="nav-item">
+                  <NavLink
+                    to="/admin?tab=users"
+                    className={({ isActive }) =>
+                      `nav-link px-2.5 ${location.search.includes('tab=users') ? 'active' : ''}`
+                    }
+                  >
+                    Users
+                  </NavLink>
+                </li>
+                <li className="nav-item">
+                  <NavLink
+                    to="/?preview=true"
+                    className="nav-link px-2.5 text-secondary"
+                    title="View public cinema showcase"
+                  >
+                    <i className="bi bi-eye me-1"></i>
+                    View Site
+                  </NavLink>
+                </li>
+              </>
+            ) : (
+              <>
+                <li className="nav-item">
+                  <NavLink
+                    to="/"
+                    end
+                    className={({ isActive }) =>
+                      `nav-link px-2.5 ${isActive && !location.search ? 'active' : ''}`
+                    }
+                  >
+                    Home
+                  </NavLink>
+                </li>
+                <li className="nav-item">
+                  <NavLink
+                    to="/#movies"
+                    className={({ isActive }) =>
+                      `nav-link px-2.5 ${isActive && location.hash === '#movies' ? 'active' : ''}`
+                    }
+                    onClick={(e) => {
+                      if (location.pathname === '/') {
+                        e.preventDefault();
+                        document.getElementById('movies-section')?.scrollIntoView({ behavior: 'smooth' });
+                      } else {
+                        navigate('/#movies');
+                      }
+                    }}
+                  >
+                    Movies
+                  </NavLink>
+                </li>
+                <li className="nav-item">
+                  <NavLink
+                    to="/?filter=coming-soon"
+                    className={({ isActive }) =>
+                      `nav-link px-2.5 ${location.search.includes('coming-soon') ? 'active' : ''}`
+                    }
+                  >
+                    Coming Soon
+                  </NavLink>
+                </li>
+                {isAuthenticated && !isAdmin && (
+                  <li className="nav-item">
+                    <NavLink
+                      to="/my-bookings"
+                      className={({ isActive }) => `nav-link px-2.5 ${isActive ? 'active' : ''}`}
+                    >
+                      <i className="bi bi-ticket-perforated me-1 text-warning"></i>
+                      My Bookings
+                    </NavLink>
+                  </li>
+                )}
+              </>
             )}
           </ul>
 
@@ -168,15 +248,33 @@ const Navbar = () => {
                       {user?.role?.toUpperCase()}
                     </span>
                   </li>
-                  <li>
-                    <Link className="dropdown-item py-1.5 small" to="/my-bookings">
-                      <i className="bi bi-ticket-perforated me-2 text-warning"></i> My Bookings
-                    </Link>
-                  </li>
-                  {isAdmin && (
+                  {isAdmin ? (
+                    <>
+                      <li>
+                        <Link className="dropdown-item py-1.5 small text-light" to="/admin">
+                          <i className="bi bi-speedometer2 me-2 text-danger"></i> Admin Dashboard
+                        </Link>
+                      </li>
+                      <li>
+                        <Link className="dropdown-item py-1.5 small text-secondary" to="/admin?tab=movies">
+                          <i className="bi bi-film me-2"></i> Manage Movies
+                        </Link>
+                      </li>
+                      <li>
+                        <Link className="dropdown-item py-1.5 small text-secondary" to="/admin?tab=shows">
+                          <i className="bi bi-calendar-event me-2"></i> Manage Shows
+                        </Link>
+                      </li>
+                      <li>
+                        <Link className="dropdown-item py-1.5 small text-secondary" to="/admin?tab=bookings">
+                          <i className="bi bi-ticket-detailed me-2"></i> Manage Bookings
+                        </Link>
+                      </li>
+                    </>
+                  ) : (
                     <li>
-                      <Link className="dropdown-item py-1.5 small text-warning" to="/admin">
-                        <i className="bi bi-speedometer2 me-2"></i> Admin Dashboard
+                      <Link className="dropdown-item py-1.5 small" to="/my-bookings">
+                        <i className="bi bi-ticket-perforated me-2 text-warning"></i> My Bookings
                       </Link>
                     </li>
                   )}

@@ -1,16 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { moviesAPI, showsAPI, bookingsAPI, theatersAPI } from '../services/api';
+import { useSearchParams } from 'react-router-dom';
+import { moviesAPI, showsAPI, bookingsAPI, theatersAPI, authAPI } from '../services/api';
+import { formatINR } from '../utils/currency';
 
 const AdminDashboardPage = () => {
-  const [activeTab, setActiveTab] = useState('movies'); // 'movies' | 'shows' | 'theaters' | 'bookings'
-  const [stats, setStats] = useState({ totalMovies: 0, totalShows: 0, totalBookings: 0, totalRevenue: 0 });
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'movies';
+  const [activeTab, setActiveTab] = useState(initialTab); // 'movies' | 'shows' | 'theaters' | 'bookings' | 'users'
+  const [stats, setStats] = useState({ totalMovies: 0, totalShows: 0, totalBookings: 0, totalRevenue: 0, totalUsers: 0, totalTheaters: 0, movieStats: [] });
   const [movies, setMovies] = useState([]);
   const [shows, setShows] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [theaters, setTheaters] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [message, setMessage] = useState(null);
+
+  // Sync tab with URL query parameter
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['movies', 'shows', 'theaters', 'bookings', 'users'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setSearchParams({ tab });
+  };
 
   // Theater Modal State (SkillWallet PDF Add Theater Requirement)
   const [showTheaterModal, setShowTheaterModal] = useState(false);
@@ -18,9 +36,9 @@ const AdminDashboardPage = () => {
     theatreName: '',
     location: '',
     screenType: 'Standard',
-    balconySeatPrice: 22,
-    middleSeatPrice: 15,
-    lowerSeatPrice: 10,
+    balconySeatPrice: 350,
+    middleSeatPrice: 250,
+    lowerSeatPrice: 180,
     totalSeats: 60,
   });
 
@@ -50,26 +68,28 @@ const AdminDashboardPage = () => {
     screenType: 'IMAX',
     showDate: new Date().toISOString().split('T')[0],
     showTime: '18:00',
-    silverPrice: 12,
-    goldPrice: 18,
-    platinumPrice: 25,
+    silverPrice: 180,
+    goldPrice: 250,
+    platinumPrice: 350,
   });
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [statsRes, moviesRes, showsRes, bookingsRes, theatersRes] = await Promise.all([
+      const [statsRes, moviesRes, showsRes, bookingsRes, theatersRes, usersRes] = await Promise.all([
         bookingsAPI.getStats(),
         moviesAPI.getAll({}),
         showsAPI.getAll(),
         bookingsAPI.getAll(),
         theatersAPI.getAll(),
+        authAPI.getUsers().catch(() => ({ data: { data: [] } })),
       ]);
-      setStats(statsRes.data.data);
+      setStats(statsRes.data.data || { totalMovies: 0, totalShows: 0, totalBookings: 0, totalRevenue: 0 });
       setMovies(moviesRes.data.data || []);
       setShows(showsRes.data.data || []);
       setBookings(bookingsRes.data.data || []);
       setTheaters(theatersRes.data.data || []);
+      setUsers(usersRes.data.data || []);
     } catch (err) {
       console.error('Error fetching admin data:', err);
     } finally {
@@ -166,9 +186,9 @@ const AdminDashboardPage = () => {
       screenType: 'IMAX',
       showDate: new Date().toISOString().split('T')[0],
       showTime: '18:00',
-      silverPrice: 12,
-      goldPrice: 18,
-      platinumPrice: 25,
+      silverPrice: 180,
+      goldPrice: 250,
+      platinumPrice: 350,
     });
     setShowShowModal(true);
   };
@@ -220,9 +240,9 @@ const AdminDashboardPage = () => {
       theatreName: '',
       location: '',
       screenType: 'Standard',
-      balconySeatPrice: 22,
-      middleSeatPrice: 15,
-      lowerSeatPrice: 10,
+      balconySeatPrice: 350,
+      middleSeatPrice: 250,
+      lowerSeatPrice: 180,
       totalSeats: 60,
     });
     setShowTheaterModal(true);
@@ -304,23 +324,23 @@ const AdminDashboardPage = () => {
 
       {/* Metric Cards */}
       <div className="row g-2.5 mb-4">
-        <div className="col-sm-6 col-lg-3">
+        <div className="col-sm-6 col-lg-2">
           <div
-            className="card p-3 rounded-3 border"
+            className="card p-3 rounded-3 border h-100"
             style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
           >
             <div className="d-flex justify-content-between align-items-center">
               <div>
-                <div className="text-secondary small text-uppercase fw-semibold" style={{ fontSize: '0.72rem' }}>
-                  Total Movies
+                <div className="text-secondary small text-uppercase fw-semibold" style={{ fontSize: '0.7rem' }}>
+                  Movies
                 </div>
-                <div className="fs-4 fw-bold text-light mt-0.5">{stats.totalMovies}</div>
+                <div className="fs-4 fw-bold text-light mt-0.5">{stats.totalMovies || movies.length}</div>
               </div>
               <div
                 className="rounded-circle d-flex align-items-center justify-content-center"
                 style={{
-                  width: '38px',
-                  height: '38px',
+                  width: '36px',
+                  height: '36px',
                   backgroundColor: 'rgba(255, 53, 72, 0.12)',
                   color: 'var(--color-primary)',
                 }}
@@ -331,23 +351,23 @@ const AdminDashboardPage = () => {
           </div>
         </div>
 
-        <div className="col-sm-6 col-lg-3">
+        <div className="col-sm-6 col-lg-2">
           <div
-            className="card p-3 rounded-3 border"
+            className="card p-3 rounded-3 border h-100"
             style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
           >
             <div className="d-flex justify-content-between align-items-center">
               <div>
-                <div className="text-secondary small text-uppercase fw-semibold" style={{ fontSize: '0.72rem' }}>
-                  Active Shows
+                <div className="text-secondary small text-uppercase fw-semibold" style={{ fontSize: '0.7rem' }}>
+                  Shows
                 </div>
-                <div className="fs-4 fw-bold text-light mt-0.5">{stats.totalShows}</div>
+                <div className="fs-4 fw-bold text-light mt-0.5">{stats.totalShows || shows.length}</div>
               </div>
               <div
                 className="rounded-circle d-flex align-items-center justify-content-center"
                 style={{
-                  width: '38px',
-                  height: '38px',
+                  width: '36px',
+                  height: '36px',
                   backgroundColor: 'rgba(56, 189, 248, 0.12)',
                   color: 'var(--color-cyan)',
                 }}
@@ -358,23 +378,50 @@ const AdminDashboardPage = () => {
           </div>
         </div>
 
-        <div className="col-sm-6 col-lg-3">
+        <div className="col-sm-6 col-lg-2">
           <div
-            className="card p-3 rounded-3 border"
+            className="card p-3 rounded-3 border h-100"
             style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
           >
             <div className="d-flex justify-content-between align-items-center">
               <div>
-                <div className="text-secondary small text-uppercase fw-semibold" style={{ fontSize: '0.72rem' }}>
-                  Total Bookings
+                <div className="text-secondary small text-uppercase fw-semibold" style={{ fontSize: '0.7rem' }}>
+                  Theaters
                 </div>
-                <div className="fs-4 fw-bold text-light mt-0.5">{stats.totalBookings}</div>
+                <div className="fs-4 fw-bold text-light mt-0.5">{stats.totalTheaters || theaters.length}</div>
               </div>
               <div
                 className="rounded-circle d-flex align-items-center justify-content-center"
                 style={{
-                  width: '38px',
-                  height: '38px',
+                  width: '36px',
+                  height: '36px',
+                  backgroundColor: 'rgba(168, 85, 247, 0.12)',
+                  color: '#c084fc',
+                }}
+              >
+                <i className="bi bi-buildings"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="col-sm-6 col-lg-2">
+          <div
+            className="card p-3 rounded-3 border h-100"
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+          >
+            <div className="d-flex justify-content-between align-items-center">
+              <div>
+                <div className="text-secondary small text-uppercase fw-semibold" style={{ fontSize: '0.7rem' }}>
+                  Bookings
+                </div>
+                <div className="fs-4 fw-bold text-light mt-0.5">{stats.totalBookings || bookings.length}</div>
+              </div>
+              <div
+                className="rounded-circle d-flex align-items-center justify-content-center"
+                style={{
+                  width: '36px',
+                  height: '36px',
                   backgroundColor: 'rgba(255, 200, 61, 0.12)',
                   color: 'var(--color-gold)',
                 }}
@@ -385,23 +432,52 @@ const AdminDashboardPage = () => {
           </div>
         </div>
 
-        <div className="col-sm-6 col-lg-3">
+        <div className="col-sm-6 col-lg-2">
           <div
-            className="card p-3 rounded-3 border"
+            className="card p-3 rounded-3 border h-100"
             style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
           >
             <div className="d-flex justify-content-between align-items-center">
               <div>
-                <div className="text-secondary small text-uppercase fw-semibold" style={{ fontSize: '0.72rem' }}>
-                  Demo Revenue
+                <div className="text-secondary small text-uppercase fw-semibold" style={{ fontSize: '0.7rem' }}>
+                  Users
                 </div>
-                <div className="fs-4 fw-bold text-success mt-0.5">${stats.totalRevenue.toFixed(2)}</div>
+                <div className="fs-4 fw-bold text-light mt-0.5">{stats.totalUsers || users.length}</div>
               </div>
               <div
                 className="rounded-circle d-flex align-items-center justify-content-center"
                 style={{
-                  width: '38px',
-                  height: '38px',
+                  width: '36px',
+                  height: '36px',
+                  backgroundColor: 'rgba(34, 197, 94, 0.12)',
+                  color: '#4ade80',
+                }}
+              >
+                <i className="bi bi-people"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="col-sm-6 col-lg-2">
+          <div
+            className="card p-3 rounded-3 border h-100"
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+          >
+            <div className="d-flex justify-content-between align-items-center">
+              <div>
+                <div className="text-secondary small text-uppercase fw-semibold" style={{ fontSize: '0.7rem' }}>
+                  Revenue (INR)
+                </div>
+                <div className="fs-5 fw-bold text-success mt-0.5 text-truncate" title={formatINR(stats.totalRevenue)}>
+                  {formatINR(stats.totalRevenue)}
+                </div>
+              </div>
+              <div
+                className="rounded-circle d-flex align-items-center justify-content-center"
+                style={{
+                  width: '36px',
+                  height: '36px',
                   backgroundColor: 'rgba(16, 185, 129, 0.12)',
                   color: 'var(--color-success)',
                 }}
@@ -415,7 +491,7 @@ const AdminDashboardPage = () => {
 
       {/* Navigation Tabs */}
       <div
-        className="d-flex gap-2 mb-3 pb-2 border-bottom"
+        className="d-flex flex-wrap gap-2 mb-3 pb-2 border-bottom"
         style={{ borderColor: 'var(--border-subtle) !important' }}
       >
         <button
@@ -426,7 +502,7 @@ const AdminDashboardPage = () => {
             backgroundColor: activeTab === 'movies' ? 'var(--color-primary)' : 'var(--bg-card)',
             borderColor: 'var(--border-subtle)',
           }}
-          onClick={() => setActiveTab('movies')}
+          onClick={() => handleTabChange('movies')}
         >
           <i className="bi bi-film me-1.5"></i> Movies ({movies.length})
         </button>
@@ -439,7 +515,7 @@ const AdminDashboardPage = () => {
             backgroundColor: activeTab === 'shows' ? 'var(--color-primary)' : 'var(--bg-card)',
             borderColor: 'var(--border-subtle)',
           }}
-          onClick={() => setActiveTab('shows')}
+          onClick={() => handleTabChange('shows')}
         >
           <i className="bi bi-calendar-event me-1.5"></i> Scheduled Shows ({shows.length})
         </button>
@@ -452,7 +528,7 @@ const AdminDashboardPage = () => {
             backgroundColor: activeTab === 'theaters' ? 'var(--color-primary)' : 'var(--bg-card)',
             borderColor: 'var(--border-subtle)',
           }}
-          onClick={() => setActiveTab('theaters')}
+          onClick={() => handleTabChange('theaters')}
         >
           <i className="bi bi-buildings me-1.5"></i> Theaters ({theaters.length})
         </button>
@@ -465,9 +541,22 @@ const AdminDashboardPage = () => {
             backgroundColor: activeTab === 'bookings' ? 'var(--color-primary)' : 'var(--bg-card)',
             borderColor: 'var(--border-subtle)',
           }}
-          onClick={() => setActiveTab('bookings')}
+          onClick={() => handleTabChange('bookings')}
         >
           <i className="bi bi-receipt me-1.5"></i> Reservations ({bookings.length})
+        </button>
+
+        <button
+          className={`btn btn-sm px-3 py-1.5 rounded-2 ${
+            activeTab === 'users' ? 'btn-cinema-primary' : 'btn-dark text-secondary'
+          }`}
+          style={{
+            backgroundColor: activeTab === 'users' ? 'var(--color-primary)' : 'var(--bg-card)',
+            borderColor: 'var(--border-subtle)',
+          }}
+          onClick={() => handleTabChange('users')}
+        >
+          <i className="bi bi-people me-1.5"></i> Registered Users ({users.length})
         </button>
       </div>
 
@@ -497,6 +586,7 @@ const AdminDashboardPage = () => {
                         src={m.posterUrl}
                         alt={m.title}
                         className="rounded"
+                        referrerPolicy="no-referrer"
                         style={{ width: '38px', height: '52px', objectFit: 'cover' }}
                       />
                     </td>
@@ -587,7 +677,7 @@ const AdminDashboardPage = () => {
                       {s.showTime}
                     </td>
                     <td className="small text-secondary" style={{ fontSize: '0.75rem' }}>
-                      S: ${s.ticketPrice?.silver} | G: ${s.ticketPrice?.gold} | VIP: ${s.ticketPrice?.platinum}
+                      S: {formatINR(s.ticketPrice?.silver, false)} | G: {formatINR(s.ticketPrice?.gold, false)} | VIP: {formatINR(s.ticketPrice?.platinum, false)}
                     </td>
                     <td>
                       <span
@@ -619,74 +709,149 @@ const AdminDashboardPage = () => {
         </div>
       )}
 
-      {/* Tab 3: Bookings */}
+      {/* Tab 3: Bookings & Revenue Analysis */}
       {activeTab === 'bookings' && (
-        <div
-          className="card overflow-hidden rounded-3 border"
-          style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
-        >
-          <div className="table-responsive">
-            <table className="table table-dark table-hover align-middle mb-0">
-              <thead>
-                <tr>
-                  <th>Ref ID</th>
-                  <th>Customer</th>
-                  <th>Movie</th>
-                  <th>Screen & Slot</th>
-                  <th>Seats</th>
-                  <th>Amount</th>
-                  <th>Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bookings.map((b) => (
-                  <tr key={b._id}>
-                    <td>
-                      <span
-                        className="badge"
-                        style={{
-                          backgroundColor: 'rgba(255, 200, 61, 0.15)',
-                          color: 'var(--color-gold)',
-                          border: '1px solid rgba(255, 200, 61, 0.3)',
-                          fontFamily: 'monospace',
-                        }}
-                      >
-                        {b.bookingRef}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="fw-semibold text-light small">{b.user?.name || 'Customer'}</div>
-                      <div className="text-secondary small" style={{ fontSize: '0.75rem' }}>
-                        {b.user?.email}
-                      </div>
-                    </td>
-                    <td className="text-light small">{b.movie?.title}</td>
-                    <td>
-                      <div className="small text-light">{b.show?.screenName}</div>
-                      <div className="text-secondary small" style={{ fontSize: '0.72rem' }}>
-                        {b.show?.showDate} @ {b.show?.showTime}
-                      </div>
-                    </td>
-                    <td>
-                      <span
-                        className="badge"
-                        style={{
-                          backgroundColor: 'rgba(255, 53, 72, 0.12)',
-                          color: 'var(--text-main)',
-                          border: '1px solid rgba(255, 53, 72, 0.3)',
-                        }}
-                      >
-                        {b.seats?.join(', ')}
-                      </span>
-                    </td>
-                    <td className="fw-bold text-success small">${b.totalAmount?.toFixed(2)}</td>
-                    <td className="small text-secondary" style={{ fontSize: '0.75rem' }}>
-                      {new Date(b.createdAt).toLocaleDateString()}
-                    </td>
+        <div className="d-flex flex-column gap-3">
+          {/* Movie-Wise Performance & Statistics */}
+          {stats.movieStats && stats.movieStats.length > 0 && (
+            <div
+              className="card overflow-hidden rounded-3 border"
+              style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+            >
+              <div
+                className="p-3 border-bottom d-flex justify-content-between align-items-center"
+                style={{ borderColor: 'var(--border-subtle) !important' }}
+              >
+                <h6 className="text-light fw-bold mb-0 d-flex align-items-center gap-2">
+                  <i className="bi bi-bar-chart-line" style={{ color: 'var(--color-primary)' }}></i>
+                  Movie-Wise Performance & Revenue
+                </h6>
+                <span className="badge bg-dark border text-secondary" style={{ fontSize: '0.7rem' }}>
+                  {stats.movieStats.length} Movies Booked
+                </span>
+              </div>
+              <div className="table-responsive">
+                <table className="table table-dark table-hover align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th style={{ width: '45px' }}>Poster</th>
+                      <th>Movie Title</th>
+                      <th className="text-center">Total Bookings</th>
+                      <th className="text-center">Tickets Sold</th>
+                      <th className="text-end">Revenue (INR)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.movieStats.map((ms) => (
+                      <tr key={ms._id}>
+                        <td>
+                          <img
+                            src={ms.posterUrl}
+                            alt={ms.title}
+                            className="rounded"
+                            referrerPolicy="no-referrer"
+                            style={{ width: '28px', height: '38px', objectFit: 'cover' }}
+                          />
+                        </td>
+                        <td className="fw-semibold text-light small">{ms.title}</td>
+                        <td className="text-center small text-secondary">{ms.totalBookings}</td>
+                        <td className="text-center">
+                          <span className="badge bg-secondary" style={{ fontSize: '0.72rem' }}>
+                            {ms.totalTickets} seats
+                          </span>
+                        </td>
+                        <td className="text-end fw-bold text-success small">{formatINR(ms.totalRevenue)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* All Bookings Table */}
+          <div
+            className="card overflow-hidden rounded-3 border"
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+          >
+            <div className="table-responsive">
+              <table className="table table-dark table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Ref ID</th>
+                    <th>Customer</th>
+                    <th>Movie</th>
+                    <th>Screen & Slot</th>
+                    <th>Seats</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Date</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {bookings.map((b) => (
+                    <tr key={b._id}>
+                      <td>
+                        <span
+                          className="badge"
+                          style={{
+                            backgroundColor: 'rgba(255, 200, 61, 0.15)',
+                            color: 'var(--color-gold)',
+                            border: '1px solid rgba(255, 200, 61, 0.3)',
+                            fontFamily: 'monospace',
+                          }}
+                        >
+                          {b.bookingRef}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="fw-semibold text-light small">{b.user?.name || 'Customer'}</div>
+                        <div className="text-secondary small" style={{ fontSize: '0.75rem' }}>
+                          {b.user?.email}
+                        </div>
+                      </td>
+                      <td className="text-light small">{b.movie?.title}</td>
+                      <td>
+                        <div className="small text-light">{b.show?.screenName}</div>
+                        <div className="text-secondary small" style={{ fontSize: '0.72rem' }}>
+                          {b.show?.showDate} @ {b.show?.showTime}
+                        </div>
+                      </td>
+                      <td>
+                        <span
+                          className="badge"
+                          style={{
+                            backgroundColor: 'rgba(255, 53, 72, 0.12)',
+                            color: 'var(--text-main)',
+                            border: '1px solid rgba(255, 53, 72, 0.3)',
+                          }}
+                        >
+                          {b.seats?.join(', ')}
+                        </span>
+                      </td>
+                      <td className="fw-bold text-success small">{formatINR(b.totalAmount)}</td>
+                      <td>
+                        <span
+                          className={`badge ${
+                            b.paymentStatus === 'completed'
+                              ? 'bg-success'
+                              : b.paymentStatus === 'cancelled'
+                              ? 'bg-danger'
+                              : 'bg-warning text-dark'
+                          }`}
+                          style={{ fontSize: '0.7rem' }}
+                        >
+                          {b.paymentStatus || 'completed'}
+                        </span>
+                      </td>
+                      <td className="small text-secondary" style={{ fontSize: '0.75rem' }}>
+                        {new Date(b.createdAt).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
@@ -751,13 +916,13 @@ const AdminDashboardPage = () => {
                       <td>
                         <div className="small d-flex flex-wrap gap-1">
                           <span className="badge bg-secondary" style={{ fontSize: '0.7rem' }}>
-                            Lower: ${t.lowerSeatPrice || 10}
+                            Lower: {formatINR(t.lowerSeatPrice || 180, false)}
                           </span>
                           <span className="badge bg-secondary" style={{ fontSize: '0.7rem' }}>
-                            Middle: ${t.middleSeatPrice || 15}
+                            Middle: {formatINR(t.middleSeatPrice || 250, false)}
                           </span>
                           <span className="badge bg-secondary" style={{ fontSize: '0.7rem' }}>
-                            Balcony: ${t.balconySeatPrice || 22}
+                            Balcony: {formatINR(t.balconySeatPrice || 350, false)}
                           </span>
                         </div>
                       </td>
@@ -770,6 +935,82 @@ const AdminDashboardPage = () => {
                         >
                           <i className="bi bi-trash"></i>
                         </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tab 5: Users Management */}
+      {activeTab === 'users' && (
+        <div
+          className="card overflow-hidden rounded-3 border"
+          style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+        >
+          {users.length === 0 ? (
+            <div className="p-5 text-center">
+              <i className="bi bi-people text-secondary fs-1 mb-2"></i>
+              <h6 className="text-light mb-1">No Users Found</h6>
+              <p className="text-secondary small mb-0">Registered customer accounts will appear here.</p>
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table table-dark table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Email Address</th>
+                    <th>Role</th>
+                    <th>User ID</th>
+                    <th>Registered On</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((u) => (
+                    <tr key={u._id}>
+                      <td>
+                        <div className="d-flex align-items-center gap-2">
+                          <div
+                            className="rounded-circle d-flex align-items-center justify-content-center fw-bold"
+                            style={{
+                              width: '32px',
+                              height: '32px',
+                              backgroundColor:
+                                u.role === 'admin' ? 'rgba(255, 53, 72, 0.2)' : 'rgba(56, 189, 248, 0.2)',
+                              color: u.role === 'admin' ? 'var(--color-primary)' : 'var(--color-cyan)',
+                              fontSize: '0.8rem',
+                            }}
+                          >
+                            {(u.name || 'U').charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <span className="fw-semibold text-light small">{u.name}</span>
+                            {u.role === 'admin' && (
+                              <span className="badge bg-danger ms-2" style={{ fontSize: '0.65rem' }}>
+                                Admin
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="small text-secondary">{u.email}</td>
+                      <td>
+                        <span
+                          className={`badge ${u.role === 'admin' ? 'bg-danger text-light' : 'bg-secondary'}`}
+                          style={{ fontSize: '0.72rem' }}
+                        >
+                          {u.role?.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="small font-monospace text-secondary" style={{ fontSize: '0.72rem' }}>
+                        {u._id}
+                      </td>
+                      <td className="small text-secondary" style={{ fontSize: '0.75rem' }}>
+                        {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A'}
                       </td>
                     </tr>
                   ))}
@@ -990,9 +1231,9 @@ const AdminDashboardPage = () => {
                             theaterId: tId,
                             screenName: `${t.theatreName} - Screen 1`,
                             screenType: t.screenType || 'Standard',
-                            silverPrice: t.lowerSeatPrice || 10,
-                            goldPrice: t.middleSeatPrice || 15,
-                            platinumPrice: t.balconySeatPrice || 22,
+                            silverPrice: t.lowerSeatPrice || 180,
+                            goldPrice: t.middleSeatPrice || 250,
+                            platinumPrice: t.balconySeatPrice || 350,
                           });
                         } else {
                           setShowForm({ ...showForm, theaterId: '' });
@@ -1062,7 +1303,7 @@ const AdminDashboardPage = () => {
                     style={{ borderColor: 'var(--border-subtle) !important' }}
                   >
                     <label className="form-label small text-secondary fw-semibold mb-1.5">
-                      Seat Tier Pricing ($)
+                      Seat Tier Pricing (₹ INR)
                     </label>
                     <div className="row g-2">
                       <div className="col-4">
@@ -1190,12 +1431,12 @@ const AdminDashboardPage = () => {
                     style={{ borderColor: 'var(--border-subtle) !important' }}
                   >
                     <label className="form-label small text-secondary fw-semibold mb-1.5">
-                      Tier Pricing Configuration ($)
+                      Tier Pricing Configuration (₹ INR)
                     </label>
                     <div className="row g-2">
                       <div className="col-4">
                         <label className="form-label small text-secondary mb-0.5" style={{ fontSize: '0.72rem' }}>
-                          Lower Tier ($)
+                          Lower Tier (₹)
                         </label>
                         <input
                           type="number"
@@ -1207,7 +1448,7 @@ const AdminDashboardPage = () => {
                       </div>
                       <div className="col-4">
                         <label className="form-label small text-secondary mb-0.5" style={{ fontSize: '0.72rem' }}>
-                          Middle Tier ($)
+                          Middle Tier (₹)
                         </label>
                         <input
                           type="number"
@@ -1219,7 +1460,7 @@ const AdminDashboardPage = () => {
                       </div>
                       <div className="col-4">
                         <label className="form-label small text-secondary mb-0.5" style={{ fontSize: '0.72rem' }}>
-                          Balcony / VIP ($)
+                          Balcony / VIP (₹)
                         </label>
                         <input
                           type="number"

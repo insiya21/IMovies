@@ -69,8 +69,11 @@ const movieSchema = new mongoose.Schema(
   }
 );
 
-// Index for search optimization
-movieSchema.index({ title: 'text', description: 'text' });
+// Index for search optimization (language_override: 'none' prevents collision with the movie's language field)
+movieSchema.index(
+  { title: 'text', description: 'text' },
+  { language_override: 'none' }
+);
 
 const Movie = mongoose.model('Movie', movieSchema);
 

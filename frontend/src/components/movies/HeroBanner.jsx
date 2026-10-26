@@ -10,11 +10,9 @@ const HeroBanner = ({ movie }) => {
 
   const getEmbedUrl = (url) => {
     if (!url) return null;
-    if (url.includes('youtube.com/watch?v=')) {
-      return url.replace('watch?v=', 'embed/');
-    }
-    if (url.includes('youtu.be/')) {
-      return url.replace('youtu.be/', 'youtube.com/embed/');
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+    if (match && match[1]) {
+      return `https://www.youtube.com/embed/${match[1]}?autoplay=1`;
     }
     return url;
   };

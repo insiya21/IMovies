@@ -1,12 +1,12 @@
 const Movie = require('../models/Movie');
 const Show = require('../models/Show');
 
-// @desc    Get all movies with optional search, genre filtering
+// @desc    Get all movies with optional search, genre filtering, and language mixing
 // @route   GET /api/movies
 // @access  Public
 const getMovies = async (req, res, next) => {
   try {
-    const { search, genre, sort } = req.query;
+    const { search, genre, language, sort } = req.query;
     let query = { isActive: true };
 
     if (search && search.trim() !== '') {
@@ -20,14 +20,69 @@ const getMovies = async (req, res, next) => {
       query.genres = { $in: [new RegExp(`^${genre.trim()}$`, 'i')] };
     }
 
-    let sortOption = { releaseDate: -1 };
-    if (sort === 'rating') {
-      sortOption = { rating: -1 };
-    } else if (sort === 'title') {
-      sortOption = { title: 1 };
+    if (language && language !== 'All') {
+      query.language = { $regex: `^${language.trim()}$`, $options: 'i' };
     }
 
-    const movies = await Movie.find(query).sort(sortOption);
+    let movies;
+    if (sort === 'rating') {
+      movies = await Movie.find(query).sort({ rating: -1 });
+    } else if (sort === 'title') {
+      movies = await Movie.find(query).sort({ title: 1 });
+    } else if (sort === 'releaseDate') {
+      movies = await Movie.find(query).sort({ releaseDate: -1 });
+    } else {
+      // Natural mixed order: fetch active movies sorted by newest release
+      // When no explicit language filter is selected, proportionally blend languages
+      // (Hindi, English, Japanese, etc.) throughout the catalog
+      const fetched = await Movie.find(query).sort({ releaseDate: -1, rating: -1 });
+      if (!language || language === 'All') {
+        const groups = {};
+        fetched.forEach((m) => {
+          const lang = (m.language || 'English').trim();
+          const normalized = lang.toLowerCase().includes('hindi')
+            ? 'Hindi'
+            : lang.toLowerCase().includes('english')
+            ? 'English'
+            : lang;
+          if (!groups[normalized]) groups[normalized] = [];
+          groups[normalized].push(m);
+        });
+
+        const languages = Object.keys(groups);
+        if (languages.length > 1) {
+          const totalCount = fetched.length;
+          const result = new Array(totalCount);
+          const occupied = new Set();
+
+          // Distribute each language proportionally across the catalog
+          languages.forEach((lang) => {
+            const list = groups[lang];
+            const step = totalCount / list.length;
+            list.forEach((movie, idx) => {
+              let targetIdx = Math.floor(idx * step);
+              while (occupied.has(targetIdx) && targetIdx < totalCount) {
+                targetIdx++;
+              }
+              if (targetIdx >= totalCount) {
+                targetIdx = 0;
+                while (occupied.has(targetIdx)) {
+                  targetIdx++;
+                }
+              }
+              result[targetIdx] = movie;
+              occupied.add(targetIdx);
+            });
+          });
+
+          movies = result.filter(Boolean);
+        } else {
+          movies = fetched;
+        }
+      } else {
+        movies = fetched;
+      }
+    }
 
     res.status(200).json({
       success: true,

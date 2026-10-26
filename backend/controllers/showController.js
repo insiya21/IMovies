@@ -1,5 +1,6 @@
 const Show = require('../models/Show');
 const Movie = require('../models/Movie');
+const Theater = require('../models/Theater');
 
 // @desc    Get shows for a specific movie, optionally filtered by date (YYYY-MM-DD)
 // @route   GET /api/shows/movie/:movieId
@@ -16,6 +17,7 @@ const getShowsByMovie = async (req, res, next) => {
 
     const shows = await Show.find(query)
       .populate('movie', 'title duration rating posterUrl')
+      .populate('theater', 'theatreName location screenType')
       .sort({ showDate: 1, showTime: 1 });
 
     res.status(200).json({
@@ -33,7 +35,9 @@ const getShowsByMovie = async (req, res, next) => {
 // @access  Public
 const getShowById = async (req, res, next) => {
   try {
-    const show = await Show.findById(req.params.id).populate('movie');
+    const show = await Show.findById(req.params.id)
+      .populate('movie')
+      .populate('theater');
 
     if (!show) {
       return res.status(404).json({
@@ -108,7 +112,7 @@ const createShow = async (req, res, next) => {
       screenType: screenType || 'Standard',
       showDate,
       showTime,
-      ticketPrice: ticketPrice || { silver: 10, gold: 15, platinum: 22 },
+      ticketPrice: ticketPrice || { silver: 180, gold: 250, platinum: 350 },
       totalSeats: totalSeats || 60,
       bookedSeats: [],
     });

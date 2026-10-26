@@ -63,9 +63,9 @@ const createTheater = async (req, res, next) => {
       theatreName: theatreName.trim(),
       location: location.trim(),
       screenType: screenType || 'Standard',
-      balconySeatPrice: Number(balconySeatPrice) || 22,
-      middleSeatPrice: Number(middleSeatPrice) || 15,
-      lowerSeatPrice: Number(lowerSeatPrice) || 10,
+      balconySeatPrice: Number(balconySeatPrice) || 350,
+      middleSeatPrice: Number(middleSeatPrice) || 250,
+      lowerSeatPrice: Number(lowerSeatPrice) || 180,
       totalSeats: Number(totalSeats) || 60,
     });
 

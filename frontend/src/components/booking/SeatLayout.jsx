@@ -1,10 +1,11 @@
 import React from 'react';
+import { formatINR } from '../../utils/currency';
 
 const SeatLayout = ({
   bookedSeats = [],
   selectedSeats = [],
   onSeatToggle,
-  ticketPrice = { silver: 10, gold: 15, platinum: 22 },
+  ticketPrice = { silver: 180, gold: 250, platinum: 350 },
   maxSeats = 8,
 }) => {
   // Define row configurations: row letter, tier, number of seats
@@ -63,7 +64,7 @@ const SeatLayout = ({
                     title={
                       isBooked
                         ? `Seat ${seatCode} (Reserved)`
-                        : `Seat ${seatCode} (${row.tier.toUpperCase()} - $${ticketPrice[row.tier] || 15})`
+                        : `Seat ${seatCode} (${row.tier.toUpperCase()} - ${formatINR(ticketPrice[row.tier] || 250, false)})`
                     }
                     className={`seat-item seat-${row.tier} ${
                       isBooked ? 'booked' : ''
@@ -94,15 +95,15 @@ const SeatLayout = ({
         <div className="row g-2 text-center text-secondary" style={{ fontSize: '0.78rem' }}>
           <div className="col-4 col-sm-2 d-flex align-items-center justify-content-center gap-1.5">
             <span className="seat-item seat-silver" style={{ width: '18px', height: '18px', fontSize: '0.6rem' }}></span>
-            <span>Silver (${ticketPrice.silver || 10})</span>
+            <span>Silver ({formatINR(ticketPrice.silver || 180, false)})</span>
           </div>
           <div className="col-4 col-sm-2 d-flex align-items-center justify-content-center gap-1.5">
             <span className="seat-item seat-gold" style={{ width: '18px', height: '18px', fontSize: '0.6rem' }}></span>
-            <span>Gold (${ticketPrice.gold || 15})</span>
+            <span>Gold ({formatINR(ticketPrice.gold || 250, false)})</span>
           </div>
           <div className="col-4 col-sm-2 d-flex align-items-center justify-content-center gap-1.5">
             <span className="seat-item seat-vip" style={{ width: '18px', height: '18px', fontSize: '0.6rem' }}></span>
-            <span>VIP (${ticketPrice.platinum || 22})</span>
+            <span>VIP ({formatINR(ticketPrice.platinum || 350, false)})</span>
           </div>
           <div className="col-4 col-sm-2 d-flex align-items-center justify-content-center gap-1.5">
             <span className="seat-item selected" style={{ width: '18px', height: '18px', fontSize: '0.6rem' }}>

@@ -95,10 +95,11 @@ The database models 5 interconnected entities:
 ## 5. Verification & Test Execution Results
 
 ### Automated Unit & Integration Tests:
-- `backend/tests/booking_logic.test.js` — **6 Tests Passed (100%)**:
+- `backend/tests/booking_logic.test.js` — **7 Tests Passed (100%)**:
   - `✓ should return 409 Conflict when seats are already booked`
   - `✓ should reject booking when seat limit exceeds 8 seats`
   - `✓ should successfully cancel a booking and release seats back to the show`
+  - `✓ regression: should use valid $in operator and avoid MongoServerError: unknown top level operator: $each`
   - `✓ should block a user from cancelling another user booking`
   - `✓ should reject cancelling an already cancelled booking`
   - `✓ should allow requests within limit and throttle when limit exceeded`
@@ -107,11 +108,12 @@ The database models 5 interconnected entities:
   - `✓ should create a new theater with pricing tiers`
   - `✓ should reject theater creation when name or location is missing`
   - `✓ should delete a theater`
+- **Total Test Execution**: **11 passed, 0 failed, 11 total (100% pass rate)**
 
 ### Frontend Production Build:
 - Bundler: Vite v6.4.5
 - Output: `frontend/dist/`
-- Build Duration: 553ms
+- Build Duration: 570ms
 - Result: **0 compilation or syntax errors**
 
 ---
@@ -163,12 +165,10 @@ cd frontend && npm run dev
 
 ## 7. Deliverables & Demonstration References
 
-- **Documentation Suite**: Located in [`docs/`](file:///Users/insiya/Projects/IMovies/docs/):
-  - Architecture: `er-diagram.md`, `technical-architecture.md`, `user-flow.md`, `mvc-pattern.md`, `roles-and-responsibilities.md`
+- **Documentation Suite**: Located in [`docs/`](docs/):
+  - Architecture: `er-diagram.md`, `er-diagram.svg`, `technical-architecture.md`, `user-flow.md`, `mvc-pattern.md`, `roles-and-responsibilities.md`
   - Backend: `backend-explanation.md`
   - Frontend: `frontend-explanation.md`
   - Features: `feature-requirements.md`
-  - Screenshots Guide: `docs/screenshots/SCREENSHOT_CHECKLIST.md`
-  - Demo Video Script: `docs/demo-video/DEMO_VIDEO_GUIDE.md`
-- **Output Screenshots:** Available in `docs/screenshots/`.
-- **Demo Video Guide:** Available in `docs/demo-video/DEMO_VIDEO_GUIDE.md`.
+- **Output Screenshots**: Available in [`docs/screenshots/`](docs/screenshots/). If all 9 required screenshots have been captured, keep them organized in this folder according to the SkillWallet specification.
+- **Demo Video Guide**: Recording script and checklist are available in [`docs/demo-video/DEMO_VIDEO_GUIDE.md`](docs/demo-video/DEMO_VIDEO_GUIDE.md).

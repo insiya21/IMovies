@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { bookingsAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import DigitalTicket from '../components/booking/DigitalTicket';
+import { formatINR } from '../utils/currency';
 
 const MyBookingsPage = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -48,6 +52,41 @@ const MyBookingsPage = () => {
       setCancelling(false);
     }
   };
+
+  if (user?.role === 'admin') {
+    return (
+      <div className="container py-5 text-center my-4">
+        <div
+          className="card p-4 mx-auto rounded-3 border shadow-sm"
+          style={{ maxWidth: '520px', backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+        >
+          <div className="mb-2">
+            <span
+              className="rounded-circle d-inline-flex align-items-center justify-content-center"
+              style={{
+                width: '52px',
+                height: '52px',
+                backgroundColor: 'rgba(255, 53, 72, 0.12)',
+                color: 'var(--color-primary)',
+              }}
+            >
+              <i className="bi bi-shield-lock fs-3"></i>
+            </span>
+          </div>
+          <h5 className="text-light fw-bold mb-1">Admin Portal Mode</h5>
+          <p className="text-secondary small mb-3">
+            Administrators manage screenings, customers, and bookings through the dedicated Admin Dashboard. Customer ticket booking is reserved for customer accounts.
+          </p>
+          <div>
+            <Link to="/admin" className="btn btn-cinema-primary btn-sm px-3.5">
+              <i className="bi bi-speedometer2 me-1.5"></i>
+              <span>Go to Admin Dashboard</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container py-4">
@@ -103,7 +142,42 @@ const MyBookingsPage = () => {
             const movie = booking.movie || {};
             const show = booking.show || {};
 
-            return (
+            if (user?.role === 'admin') {
+    return (
+      <div className="container py-5 text-center my-4">
+        <div
+          className="card p-4 mx-auto rounded-3 border shadow-sm"
+          style={{ maxWidth: '520px', backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+        >
+          <div className="mb-2">
+            <span
+              className="rounded-circle d-inline-flex align-items-center justify-content-center"
+              style={{
+                width: '52px',
+                height: '52px',
+                backgroundColor: 'rgba(255, 53, 72, 0.12)',
+                color: 'var(--color-primary)',
+              }}
+            >
+              <i className="bi bi-shield-lock fs-3"></i>
+            </span>
+          </div>
+          <h5 className="text-light fw-bold mb-1">Admin Portal Mode</h5>
+          <p className="text-secondary small mb-3">
+            Administrators manage screenings, customers, and bookings through the dedicated Admin Dashboard. Customer ticket booking is reserved for customer accounts.
+          </p>
+          <div>
+            <Link to="/admin" className="btn btn-cinema-primary btn-sm px-3.5">
+              <i className="bi bi-speedometer2 me-1.5"></i>
+              <span>Go to Admin Dashboard</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
               <div key={booking._id} className="col-lg-6">
                 <div
                   className="card p-3 h-100 d-flex flex-column justify-content-between rounded-3 border shadow-sm"
@@ -175,6 +249,7 @@ const MyBookingsPage = () => {
                         src={movie.posterUrl}
                         alt={movie.title}
                         className="rounded"
+                        referrerPolicy="no-referrer"
                         style={{ width: '48px', height: '68px', objectFit: 'cover' }}
                       />
                       <div className="small" style={{ fontSize: '0.8rem' }}>
@@ -202,7 +277,7 @@ const MyBookingsPage = () => {
                     <div>
                       <div className="text-secondary small" style={{ fontSize: '0.72rem' }}>Total Paid</div>
                       <div className="fw-bold text-light" style={{ fontSize: '0.98rem' }}>
-                        ${booking.totalAmount?.toFixed(2)}
+                        {formatINR(booking.totalAmount)}
                       </div>
                     </div>
 
@@ -278,7 +353,7 @@ const MyBookingsPage = () => {
                   </div>
                   <div className="text-secondary">
                     Total Refund Amount:{' '}
-                    <span className="text-success fw-bold">${cancelModalBooking.totalAmount?.toFixed(2)}</span>
+                    <span className="text-success fw-bold">{formatINR(cancelModalBooking.totalAmount)}</span>
                   </div>
                 </div>
                 <div className="text-secondary small">

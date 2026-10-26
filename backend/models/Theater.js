@@ -24,17 +24,17 @@ const theaterSchema = new mongoose.Schema(
     },
     balconySeatPrice: {
       type: Number,
-      default: 22,
+      default: 350,
       min: 0,
     },
     middleSeatPrice: {
       type: Number,
-      default: 15,
+      default: 250,
       min: 0,
     },
     lowerSeatPrice: {
       type: Number,
-      default: 10,
+      default: 180,
       min: 0,
     },
     balconySeats: {

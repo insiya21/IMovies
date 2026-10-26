@@ -120,9 +120,26 @@ const getCurrentUser = async (req, res, next) => {
   }
 };
 
+// @desc    Get all registered users (Admin only)
+// @route   GET /api/auth/users
+// @access  Private / Admin
+const getAllUsers = async (req, res, next) => {
+  try {
+    const users = await User.find({}).select('-password').sort({ createdAt: -1 });
+    res.status(200).json({
+      success: true,
+      count: users.length,
+      data: users,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getCurrentUser,
+  getAllUsers,
   generateToken,
 };

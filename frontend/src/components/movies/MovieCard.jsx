@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const FALLBACK_POSTERS = {
   'dune: part two': 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=600&q=80',
@@ -8,6 +8,13 @@ const FALLBACK_POSTERS = {
   'interstellar': 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=600&q=80',
   'inception': 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?auto=format&fit=crop&w=600&q=80',
   'cyberpunk 2099: neon horizon': 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80',
+  '3 idiots': 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=600&q=80',
+  'stree 2': 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=600&q=80',
+  'bhool bhulaiyaa 3': 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80',
+  'zindagi na milegi dobara': 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80',
+  '12th fail': 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80',
+  'stand by me doraemon': 'https://upload.wikimedia.org/wikipedia/en/0/01/Stand_by_Me_Doraemon_official_poster.jpg',
+  'stand by me doraemon (2014)': 'https://upload.wikimedia.org/wikipedia/en/0/01/Stand_by_Me_Doraemon_official_poster.jpg',
 };
 
 // Clean SVG fallback poster if network image fails
@@ -15,6 +22,8 @@ const DEFAULT_POSTER =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 450' width='300' height='450'%3E%3Crect width='100%25' height='100%25' fill='%23111820'/%3E%3Crect x='8' y='8' width='284' height='434' rx='10' fill='%23101820' stroke='%231E2633' stroke-width='2'/%3E%3Ccircle cx='150' cy='185' r='40' fill='%23FF3548' fill-opacity='0.15' stroke='%23FF3548' stroke-width='2'/%3E%3Cpath d='M142 168 L168 185 L142 202 Z' fill='%23FF3548'/%3E%3Ctext x='150' y='260' fill='%23F5F7FA' font-family='sans-serif' font-size='16' font-weight='bold' text-anchor='middle'%3EIMOVIES%3C/text%3E%3Ctext x='150' y='285' fill='%23A6B0BE' font-family='sans-serif' font-size='12' text-anchor='middle'%3ECinema Screening%3C/text%3E%3C/svg%3E";
 
 const MovieCard = ({ movie }) => {
+  const navigate = useNavigate();
+
   const formatDuration = (mins) => {
     if (!mins) return '';
     const h = Math.floor(mins / 60);
@@ -23,10 +32,35 @@ const MovieCard = ({ movie }) => {
   };
 
   const titleKey = movie.title?.toLowerCase() || '';
-  const initialPoster = movie.posterUrl || FALLBACK_POSTERS[titleKey] || DEFAULT_POSTER;
+  const fallbackPoster =
+    FALLBACK_POSTERS[titleKey] ||
+    (titleKey.includes('doraemon') ? FALLBACK_POSTERS['stand by me doraemon'] : null);
+  const initialPoster = movie.posterUrl || fallbackPoster || DEFAULT_POSTER;
+
+  const handleCardClick = () => {
+    navigate(`/movie/${movie._id}`);
+  };
+
+  const handleBookTicketsClick = (e) => {
+    // Prevent outer card click from causing redundant navigation
+    e.stopPropagation();
+    navigate(`/movie/${movie._id}#showtimes`);
+  };
 
   return (
-    <div className="cinema-card">
+    <div
+      className="cinema-card"
+      onClick={handleCardClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleCardClick();
+        }
+      }}
+      style={{ cursor: 'pointer' }}
+    >
       {/* Consistent 2:3 Aspect Ratio Poster */}
       <div className="cinema-poster-wrapper">
         <img
@@ -34,10 +68,11 @@ const MovieCard = ({ movie }) => {
           alt={movie.title}
           className="cinema-poster-img"
           loading="lazy"
+          referrerPolicy="no-referrer"
           onError={(e) => {
             e.target.onerror = null;
-            if (FALLBACK_POSTERS[titleKey] && e.target.src !== FALLBACK_POSTERS[titleKey]) {
-              e.target.src = FALLBACK_POSTERS[titleKey];
+            if (fallbackPoster && e.target.src !== fallbackPoster) {
+              e.target.src = fallbackPoster;
             } else {
               e.target.src = DEFAULT_POSTER;
             }
@@ -89,13 +124,14 @@ const MovieCard = ({ movie }) => {
 
         {/* Booking Button (14px) pinned to bottom */}
         <div className="mt-auto pt-2 border-top" style={{ borderColor: 'var(--border-subtle)' }}>
-          <Link
-            to={`/movie/${movie._id}`}
+          <button
+            type="button"
             className="btn btn-cinema-primary movie-card-btn w-100"
+            onClick={handleBookTicketsClick}
           >
             <i className="bi bi-ticket-perforated me-1"></i>
             <span>Book Tickets</span>
-          </Link>
+          </button>
         </div>
       </div>
     </div>

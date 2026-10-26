@@ -8,10 +8,12 @@ const HomePage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSearch = searchParams.get('search') || '';
   const filterParam = searchParams.get('filter') || '';
+  const langParam = searchParams.get('language') || 'All';
 
   const [movies, setMovies] = useState([]);
   const [genres, setGenres] = useState(['All']);
   const [selectedGenre, setSelectedGenre] = useState('All');
+  const [selectedLanguage, setSelectedLanguage] = useState(langParam);
   const [searchTerm, setSearchTerm] = useState(initialSearch);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -45,7 +47,7 @@ const HomePage = () => {
     fetchGenres();
   }, []);
 
-  // Fetch movies based on search and genre
+  // Fetch movies based on search, genre, and language
   useEffect(() => {
     const fetchMovies = async () => {
       setLoading(true);
@@ -54,6 +56,7 @@ const HomePage = () => {
         const params = {};
         if (searchTerm.trim()) params.search = searchTerm.trim();
         if (selectedGenre !== 'All') params.genre = selectedGenre;
+        if (selectedLanguage !== 'All') params.language = selectedLanguage;
 
         const res = await moviesAPI.getAll(params);
         setMovies(res.data.data || []);
@@ -69,7 +72,16 @@ const HomePage = () => {
     }, 250);
 
     return () => clearTimeout(delayDebounce);
-  }, [searchTerm, selectedGenre]);
+  }, [searchTerm, selectedGenre, selectedLanguage]);
+
+  const handleLanguageChange = (lang) => {
+    setSelectedLanguage(lang);
+    const newParams = {};
+    if (searchTerm.trim()) newParams.search = searchTerm.trim();
+    if (lang !== 'All') newParams.language = lang;
+    if (filterParam) newParams.filter = filterParam;
+    setSearchParams(newParams);
+  };
 
   const handleSearchChange = (e) => {
     const val = e.target.value;
@@ -134,6 +146,22 @@ const HomePage = () => {
           </div>
         </div>
 
+        {/* Language Filter Row */}
+        <div className="d-flex flex-wrap gap-2 mb-2 align-items-center">
+          <span className="text-secondary small me-1 fw-medium d-none d-sm-inline" style={{ fontSize: '0.8rem' }}>
+            Language:
+          </span>
+          {['All', 'English', 'Hindi', 'Japanese'].map((lang) => (
+            <button
+              key={lang}
+              className={`genre-filter-btn ${selectedLanguage === lang ? 'active' : ''}`}
+              onClick={() => handleLanguageChange(lang)}
+            >
+              {lang}
+            </button>
+          ))}
+        </div>
+
         {/* Clean Genre-Filter Row (wraps cleanly on mobile without horizontal page overflow) */}
         <div className="d-flex flex-wrap gap-2 mb-3 align-items-center">
           <span className="text-secondary small me-1 fw-medium d-none d-sm-inline" style={{ fontSize: '0.8rem' }}>
@@ -192,6 +220,7 @@ const HomePage = () => {
             onClick={() => {
               setSearchTerm('');
               setSelectedGenre('All');
+              setSelectedLanguage('All');
               setSearchParams({});
             }}
           >

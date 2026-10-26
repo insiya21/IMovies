@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { showsAPI, bookingsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import SeatLayout from '../components/booking/SeatLayout';
+import { formatINR } from '../utils/currency';
 
 const SeatBookingPage = () => {
   const { showId } = useParams();
@@ -17,7 +18,7 @@ const SeatBookingPage = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   // Demo card form states
-  const [cardName, setCardName] = useState(user?.name || 'John Doe');
+  const [cardName, setCardName] = useState(user?.name || 'Customer');
   const [cardNumber, setCardNumber] = useState('4242 •••• •••• 4242');
 
   const fetchShowData = async () => {
@@ -37,11 +38,11 @@ const SeatBookingPage = () => {
     }
   }, [showId]);
 
-  // Calculate pricing breakdown
+  // Calculate pricing breakdown in Indian Rupees (₹ INR)
   const calculatePricing = () => {
-    if (!show) return { seatDetails: [], subtotal: 0, convenienceFee: 2.5, total: 0 };
+    if (!show) return { seatDetails: [], subtotal: 0, convenienceFee: 30.0, total: 0 };
 
-    const prices = show.ticketPrice || { silver: 10, gold: 15, platinum: 22 };
+    const prices = show.ticketPrice || { silver: 180, gold: 250, platinum: 350 };
     let subtotal = 0;
 
     const seatDetails = selectedSeats.map((seat) => {
@@ -51,13 +52,13 @@ const SeatBookingPage = () => {
       else if (['C', 'D'].includes(row)) tier = 'gold';
       else tier = 'platinum';
 
-      const price = prices[tier] || 15;
+      const price = prices[tier] || 250;
       subtotal += price;
 
       return { seatNumber: seat, tier, price };
     });
 
-    const convenienceFee = selectedSeats.length > 0 ? 2.5 : 0;
+    const convenienceFee = selectedSeats.length > 0 ? 30.0 : 0;
     const total = subtotal + convenienceFee;
 
     return { seatDetails, subtotal, convenienceFee, total };
@@ -67,7 +68,17 @@ const SeatBookingPage = () => {
 
   const handleCheckoutClick = () => {
     if (!isAuthenticated) {
-      navigate('/login', { state: { from: { pathname: `/booking/${showId}` } } });
+      navigate('/login', {
+        state: {
+          from: { pathname: `/booking/${showId}` },
+          message: 'Please sign in to book your tickets.',
+        },
+      });
+      return;
+    }
+    if (user?.role === 'admin') {
+      alert('Administrators manage screenings via the Admin Dashboard. Customer ticket booking is restricted to customer accounts.');
+      navigate('/admin');
       return;
     }
     if (selectedSeats.length === 0) {
@@ -170,7 +181,13 @@ const SeatBookingPage = () => {
               src={movie.posterUrl}
               alt={movie.title}
               className="rounded-2 shadow-sm"
+              referrerPolicy="no-referrer"
               style={{ width: '55px', height: '80px', objectFit: 'cover' }}
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src =
+                  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 150' width='100' height='150'%3E%3Crect width='100%25' height='100%25' fill='%23111820'/%3E%3Ctext x='50' y='75' fill='%23FF3548' font-family='sans-serif' font-size='12' font-weight='bold' text-anchor='middle'%3EIMOVIES%3C/text%3E%3C/svg%3E";
+              }}
             />
           </div>
           <div className="col">
@@ -180,7 +197,7 @@ const SeatBookingPage = () => {
             <div className="d-flex flex-wrap gap-2 text-secondary small align-items-center" style={{ fontSize: '0.8rem' }}>
               <span>
                 <i className="bi bi-camera-reels me-1" style={{ color: 'var(--color-primary)' }}></i>
-                {show.screenName}
+                {show.theater?.theatreName ? `${show.theater.theatreName} — ` : ''}{show.screenName}
               </span>
               <span>•</span>
               <span
@@ -271,7 +288,7 @@ const SeatBookingPage = () => {
                         padding: '0.22rem 0.5rem',
                       }}
                     >
-                      <strong>{s.seatNumber}</strong> (${s.price})
+                      <strong>{s.seatNumber}</strong> ({formatINR(s.price, false)})
                     </span>
                   ))}
                 </div>
@@ -285,18 +302,18 @@ const SeatBookingPage = () => {
             >
               <div className="d-flex justify-content-between text-secondary mb-1.5">
                 <span>Tickets Subtotal</span>
-                <span className="text-light">${subtotal.toFixed(2)}</span>
+                <span className="text-light">{formatINR(subtotal)}</span>
               </div>
               <div className="d-flex justify-content-between text-secondary mb-1.5">
                 <span>Booking Fee</span>
-                <span className="text-light">${convenienceFee.toFixed(2)}</span>
+                <span className="text-light">{formatINR(convenienceFee)}</span>
               </div>
               <div
                 className="d-flex justify-content-between fw-bold text-light pt-2 border-top mt-2"
                 style={{ borderColor: 'var(--border-subtle) !important', fontSize: '1rem' }}
               >
                 <span>Total Amount</span>
-                <span style={{ color: 'var(--color-primary)' }}>${total.toFixed(2)}</span>
+                <span style={{ color: 'var(--color-primary)' }}>{formatINR(total)}</span>
               </div>
             </div>
 
@@ -364,7 +381,7 @@ const SeatBookingPage = () => {
                     </div>
                     <div className="d-flex justify-content-between text-secondary">
                       <span>Total Amount:</span>
-                      <strong className="text-success fs-6">${total.toFixed(2)}</strong>
+                      <strong className="text-success fs-6">{formatINR(total)}</strong>
                     </div>
                   </div>
 
@@ -453,7 +470,7 @@ const SeatBookingPage = () => {
                         Issuing Ticket...
                       </>
                     ) : (
-                      `Confirm & Pay $${total.toFixed(2)}`
+                      `Confirm & Pay ${formatINR(total)}`
                     )}
                   </button>
                 </div>

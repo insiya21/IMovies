@@ -1,6 +1,8 @@
 const Booking = require('../models/Booking');
 const Show = require('../models/Show');
 const Movie = require('../models/Movie');
+const User = require('../models/User');
+const Theater = require('../models/Theater');
 
 // Generate unique 8-character uppercase booking reference
 const generateBookingRef = () => {
@@ -17,6 +19,14 @@ const generateBookingRef = () => {
 // @access  Private
 const createBooking = async (req, res, next) => {
   try {
+    // Admin access guard: Admins cannot create customer bookings
+    if (req.user && req.user.role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Administrators cannot create customer bookings. Please use a standard customer account.',
+      });
+    }
+
     const { showId, seats, seatDetails, paymentMethod } = req.body;
 
     if (!showId || !seats || !Array.isArray(seats) || seats.length === 0) {
@@ -68,11 +78,11 @@ const createBooking = async (req, res, next) => {
       });
     }
 
-    // 3. Compute price details
+    // 3. Compute price details (INR defaults)
     const priceMap = {
-      silver: existingShow.ticketPrice?.silver || 10,
-      gold: existingShow.ticketPrice?.gold || 15,
-      platinum: existingShow.ticketPrice?.platinum || 22,
+      silver: existingShow.ticketPrice?.silver || 180,
+      gold: existingShow.ticketPrice?.gold || 250,
+      platinum: existingShow.ticketPrice?.platinum || 350,
     };
 
     let calculatedSubtotal = 0;
@@ -83,7 +93,7 @@ const createBooking = async (req, res, next) => {
       else if (['C', 'D'].includes(row)) tier = 'gold';
       else tier = 'platinum';
 
-      const price = priceMap[tier] || 15;
+      const price = priceMap[tier] || 250;
       calculatedSubtotal += price;
 
       return {
@@ -93,7 +103,7 @@ const createBooking = async (req, res, next) => {
       };
     });
 
-    const convenienceFee = 2.5;
+    const convenienceFee = 30.0;
     const grandTotal = Number((calculatedSubtotal + convenienceFee).toFixed(2));
 
     // 4. Generate guaranteed unique booking reference
@@ -226,12 +236,48 @@ const getAdminStats = async (req, res, next) => {
     const totalMovies = await Movie.countDocuments();
     const totalShows = await Show.countDocuments();
     const totalBookings = await Booking.countDocuments();
+    const totalUsers = await User.countDocuments();
+    const totalTheaters = await Theater.countDocuments();
 
+    // Calculate total revenue strictly from completed bookings (excludes cancelled and failed)
     const revenueResult = await Booking.aggregate([
       { $match: { paymentStatus: 'completed' } },
       { $group: { _id: null, totalRevenue: { $sum: '$totalAmount' } } },
     ]);
     const totalRevenue = revenueResult[0]?.totalRevenue || 0;
+
+    // Movie-wise booking statistics
+    const movieStats = await Booking.aggregate([
+      { $match: { paymentStatus: 'completed' } },
+      {
+        $group: {
+          _id: '$movie',
+          totalBookings: { $sum: 1 },
+          totalTickets: { $sum: { $size: '$seats' } },
+          totalRevenue: { $sum: '$totalAmount' },
+        },
+      },
+      {
+        $lookup: {
+          from: 'movies',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'movieDetails',
+        },
+      },
+      { $unwind: '$movieDetails' },
+      {
+        $project: {
+          _id: 1,
+          title: '$movieDetails.title',
+          posterUrl: '$movieDetails.posterUrl',
+          totalBookings: 1,
+          totalTickets: 1,
+          totalRevenue: 1,
+        },
+      },
+      { $sort: { totalRevenue: -1 } },
+    ]);
 
     res.status(200).json({
       success: true,
@@ -239,7 +285,10 @@ const getAdminStats = async (req, res, next) => {
         totalMovies,
         totalShows,
         totalBookings,
+        totalUsers,
+        totalTheaters,
         totalRevenue: Math.round(totalRevenue * 100) / 100,
+        movieStats,
       },
     });
   } catch (error) {

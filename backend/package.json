@@ -8,6 +8,7 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "seed": "node seed/seedData.js",
+    "seed:hindi": "node seed/addHindiMovies.js",
     "test": "jest --runInBand --detectOpenHandles --forceExit"
   },
   "dependencies": {

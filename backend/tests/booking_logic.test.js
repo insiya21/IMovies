@@ -67,6 +67,16 @@ describe('Seat Booking Concurrency & Duplicate Prevention Unit Test', () => {
     expect(mockRes.responseData.message).toContain('Maximum 8 tickets allowed');
   });
 
+  it('should block administrators from creating customer bookings', async () => {
+    mockReq.user.role = 'admin';
+
+    await createBooking(mockReq, mockRes, mockNext);
+
+    expect(mockRes.statusCode).toBe(403);
+    expect(mockRes.responseData.success).toBe(false);
+    expect(mockRes.responseData.message).toContain('Administrators cannot create customer bookings');
+  });
+
   describe('Booking Cancellation & Seat Release', () => {
     it('should successfully cancel a booking and release seats back to the show', async () => {
       const mockBooking = {
